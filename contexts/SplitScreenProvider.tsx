@@ -19,7 +19,7 @@ const SplitScreenContext = createContext<SplitScreenContextType | undefined>(und
 export function SplitScreenProvider({ children }: { children: ReactNode }) {
   const [isRightPanelOpen, setIsRightPanelOpen] = useState(false);
   const [rightPanelContent, setRightPanelContent] = useState<ReactNode | null>(null);
-  const [rightPanelWidth, setRightPanelWidth] = useState(400); // Default width in pixels
+  const [rightPanelWidth, setRightPanelWidth] = useState(500); // Default width in pixels
   const [leftPanelWidth, setLeftPanelWidth] = useState(0); // Will be calculated dynamically
 
   const handleSetRightPanelContent = (newContent: ReactNode) => {

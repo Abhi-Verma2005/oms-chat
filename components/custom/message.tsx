@@ -8,16 +8,12 @@ import { BotIcon, UserIcon } from "./icons";
 import { Markdown } from "./markdown";
 import { PreviewAttachment } from "./preview-attachment";
 import { Weather } from "./weather";
+import { useCart } from "../../contexts/cart-context";
 import { useSplitScreen } from "../../contexts/SplitScreenProvider";
-import { AuthorizePayment } from "../flights/authorize-payment";
-import { DisplayBoardingPass } from "../flights/boarding-pass";
-import { CreateReservation } from "../flights/create-reservation";
-import { FlightStatus } from "../flights/flight-status";
-import { ListFlights } from "../flights/list-flights";
-import { SelectSeats } from "../flights/select-seats";
-import { VerifyPayment } from "../flights/verify-payment";
+import CartManagementResults from "../oms/cart-management-results";
+import { OrdersDisplayResults } from "../oms/orders-display-results";
+import StripePaymentComponent from "../oms/stripe-payment-component";
 import { PublishersResults } from "../publishers/publishers-results";
-
 
 export const Message = ({
   chatId,
@@ -33,7 +29,78 @@ export const Message = ({
   attachments?: Array<Attachment>;
 }) => {
   const { setRightPanelContent } = useSplitScreen();
+  const { addItem, removeItem, getCartItemIds, state: cartState, clearCart } = useCart();
   const processedToolCalls = useRef<Set<string>>(new Set());
+
+  // Function to trigger AI acknowledgment of payment success
+  const triggerPaymentSuccessMessage = useCallback(async (paymentIntent: any) => {
+    try {
+      // Send a message to the chat API to trigger AI acknowledgment
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: chatId,
+          messages: [
+            {
+              role: 'user',
+              content: `Payment completed successfully! Payment ID: ${paymentIntent.id}, Amount: $${(paymentIntent.amount / 100).toFixed(2)}. Please acknowledge this payment and provide next steps.`
+            }
+          ]
+        }),
+      });
+
+      if (response.ok) {
+        console.log('Payment success message sent to AI');
+      } else {
+        console.error('Failed to send payment success message to AI');
+      }
+    } catch (error) {
+      console.error('Error sending payment success message:', error);
+    }
+  }, [chatId]);
+
+  // Function to handle "Done Adding to Cart" button click
+  const handleDoneAddingToCart = useCallback(() => {
+    if (cartState.items.length === 0) return;
+    
+    // Trigger AI to process payment with current cart items
+    const cartItems = cartState.items.map(item => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity
+    }));
+    
+    // Show payment processing component
+    const paymentComponent = (
+      <div className="p-4 space-y-4">
+        <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+          <p className="text-green-800 dark:text-green-200 text-sm font-medium">
+            Ready to process payment! I&apos;ll now display the Stripe payment component for you to complete your purchase.
+          </p>
+        </div>
+        <StripePaymentComponent
+          amount={cartState.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 1.08}
+          items={cartItems}
+          onPaymentSuccess={(paymentIntent) => {
+            console.log('Payment successful:', paymentIntent);
+            // Clear the cart after successful payment
+            clearCart();
+            // Trigger AI acknowledgment of successful payment
+            triggerPaymentSuccessMessage(paymentIntent);
+          }}
+          onPaymentError={(error) => {
+            console.error('Payment error:', error);
+          }}
+        />
+      </div>
+    );
+    
+    setRightPanelContent(paymentComponent);
+  }, [cartState.items, setRightPanelContent, clearCart, triggerPaymentSuccessMessage]);
 
   // Function to get component and show in right panel
   const showInRightPanel = useCallback((toolName: string, result: any) => {
@@ -43,31 +110,36 @@ export const Message = ({
       case "getWeather":
         component = <Weather weatherAtLocation={result} />;
         break;
-      case "displayFlightStatus":
-        component = <FlightStatus flightStatus={result} />;
-        break;
-      case "searchFlights":
-        component = <ListFlights chatId={chatId} results={result} />;
-        break;
-      case "selectSeats":
-        component = <SelectSeats chatId={chatId} availability={result} />;
-        break;
-      case "createReservation":
-        component = Object.keys(result).includes("error") ? null : (
-          <CreateReservation reservation={result} />
-        );
-        break;
-      case "authorizePayment":
-        component = <AuthorizePayment intent={result} />;
-        break;
-      case "displayBoardingPass":
-        component = <DisplayBoardingPass boardingPass={result} />;
-        break;
-      case "verifyPayment":
-        component = <VerifyPayment result={result} />;
+      case "displayOrders":
+        component = <OrdersDisplayResults data={result} success={result.success} error={result.error} message={result.message} />;
         break;
       case "browsePublishers":
-        component = <PublishersResults results={result} />;
+        component = (
+          <PublishersResults 
+            results={result}
+            onAddToCart={(publisher) => {
+              addItem({
+                id: publisher.id,
+                type: "publisher",
+                name: publisher.websiteName,
+                price: publisher.pricing.base,
+                quantity: 1,
+                addedAt: new Date(),
+                metadata: {
+                  publisherId: publisher.id,
+                  website: publisher.website,
+                  niche: publisher.niche,
+                  dr: publisher.authority.dr,
+                  da: publisher.authority.da
+                }
+              });
+            }}
+            onRemoveFromCart={(publisherId) => {
+              removeItem(publisherId);
+            }}
+            cartItems={getCartItemIds()}
+          />
+        );
         break;
       case "getPublisherDetails":
         component = (
@@ -78,6 +150,39 @@ export const Message = ({
                 {JSON.stringify(result, null, 2)}
               </pre>
             </div>
+          </div>
+        );
+        break;
+      case "addToCart":
+      case "removeFromCart":
+      case "viewCart":
+      case "clearCart":
+      case "updateCartItemQuantity":
+        component = (
+          <CartManagementResults 
+            data={result} 
+            onDoneAddingToCart={handleDoneAddingToCart}
+          />
+        );
+        break;
+      case "processPayment":
+        component = (
+          <div className="p-4 space-y-4">
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+              <p className="text-green-800 dark:text-green-200 text-sm font-medium">
+                {result.message}
+              </p>
+            </div>
+            <StripePaymentComponent
+              amount={result.totalAmount}
+              items={result.items}
+              onPaymentSuccess={(paymentIntent) => {
+                console.log('Payment successful:', paymentIntent);
+              }}
+              onPaymentError={(error) => {
+                console.error('Payment error:', error);
+              }}
+            />
           </div>
         );
         break;
@@ -95,7 +200,7 @@ export const Message = ({
     if (component) {
       setRightPanelContent(component);
     }
-  }, [setRightPanelContent, chatId]);
+  }, [setRightPanelContent, addItem, removeItem, getCartItemIds, handleDoneAddingToCart]);
 
   // Auto-display completed tool results
   useEffect(() => {

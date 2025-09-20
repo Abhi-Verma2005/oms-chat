@@ -4,25 +4,42 @@ import { z } from "zod";
 import { openaiProModel } from "../../../../ai";
 import {
   browsePublishers,
-  generateReservationPrice,
-  generateSampleFlightSearchResults,
-  generateSampleFlightStatus,
-  generateSampleSeatSelection,
   getPublisherDetails,
+  addToCart,
+  removeFromCart,
+  viewCart,
+  clearCart,
+  updateCartItemQuantity,
+  displayOrdersFunction,
 } from "../../../../ai/actions";
 import { auth } from "../../../../app/(auth)/auth";
 import {
-  createReservation,
   deleteChatById,
   getChatById,
-  getReservationById,
   saveChat,
 } from "../../../../db/queries";
 import { generateUUID } from "../../../../lib/utils";
 
 export async function POST(request: Request) {
-  const { id, messages }: { id: string; messages: Array<Message> } =
-    await request.json();
+  const { id, messages, userInfo }: { 
+    id: string; 
+    messages: Array<Message>;
+    userInfo?: {
+      id: string;
+      email: string;
+      name?: string;
+      preferences?: {
+        industry?: string;
+        companySize?: string;
+        role?: string;
+        interests?: string[];
+      };
+      chatHistory?: {
+        totalChats: number;
+        lastActive: string;
+      };
+    } | null;
+  } = await request.json();
 
   const session = await auth();
 
@@ -34,9 +51,23 @@ export async function POST(request: Request) {
     (message) => message.content.length > 0,
   );
 
-  const result = await streamText({
-    model: openaiProModel,
-    system: `\n
+  // Generate personalized system prompt
+  const generateSystemPrompt = (userInfo: {
+    id: string;
+    email: string;
+    name?: string;
+    preferences?: {
+      industry?: string;
+      companySize?: string;
+      role?: string;
+      interests?: string[];
+    };
+    chatHistory?: {
+      totalChats: number;
+      lastActive: string;
+    };
+  } | null) => {
+    const basePrompt = `\n
         - you help users with backlinking and publisher discovery for SEO and content marketing!
         - keep your responses concise and helpful.
         - after every tool call, show the results to the user in a clear format.
@@ -48,14 +79,51 @@ export async function POST(request: Request) {
           - search for specific publishers or niches
           - view detailed publisher information
           - help users understand pricing and requirements
+          - add publishers to cart for backlinking campaigns
+          - manage cart items (add, remove, update quantities)
+          - process payments using Stripe for completed orders
+          - acknowledge successful payments and provide next steps for backlinking campaigns
         - explain what each metric means:
           - DR: Domain Rating (0-100, higher is better)
           - DA: Domain Authority (0-100, higher is better) 
           - Spam Score: Lower is better (1-5% is ideal)
           - Do-follow: Links that pass SEO value
           - Outbound Links: Number of external links on the page
-        '
-      `,
+        - when a user mentions a successful payment, acknowledge it enthusiastically and provide helpful next steps for their backlinking campaign
+        - for successful payments, suggest next actions like content creation, outreach strategies, or campaign planning
+        `;
+
+    if (!userInfo) {
+      return basePrompt;
+    }
+
+    const userContext = `
+        
+        ## User Context:
+        - User: ${userInfo.name || 'User'} (${userInfo.email})
+        - User ID: ${userInfo.id}
+        - Last Active: ${userInfo.chatHistory?.lastActive ? new Date(userInfo.chatHistory.lastActive).toLocaleDateString() : 'Unknown'}
+        - Total Chats: ${userInfo.chatHistory?.totalChats || 0}
+        ${userInfo.preferences?.industry ? `- Industry: ${userInfo.preferences.industry}` : ''}
+        ${userInfo.preferences?.companySize ? `- Company Size: ${userInfo.preferences.companySize}` : ''}
+        ${userInfo.preferences?.role ? `- Role: ${userInfo.preferences.role}` : ''}
+        ${userInfo.preferences?.interests && userInfo.preferences.interests.length > 0 ? `- Interests: ${userInfo.preferences.interests.join(', ')}` : ''}
+        
+        ## Personalization Guidelines:
+        - Use the user's name when appropriate: ${userInfo.name || 'User'}
+        - Reference their industry context when relevant: ${userInfo.preferences?.industry || 'general business'}
+        - Consider their role and company size when suggesting publishers
+        - Build on their interests when recommending content opportunities
+        - If this is their first chat, provide a warm welcome and explain the platform
+        - If they're a returning user, acknowledge their previous activity and build on it
+        `;
+
+    return basePrompt + userContext;
+  };
+
+  const result = await streamText({
+    model: openaiProModel,
+    system: generateSystemPrompt(userInfo || null),
     messages: coreMessages,
     tools: {
       getWeather: {
@@ -73,147 +141,16 @@ export async function POST(request: Request) {
           return weatherData;
         },
       },
-      displayFlightStatus: {
-        description: "Display the status of a flight",
+      displayOrders: {
+        description: "Display user orders with filtering and summary statistics",
         parameters: z.object({
-          flightNumber: z.string().describe("Flight number"),
-          date: z.string().describe("Date of the flight"),
+          userId: z.string().optional().describe("User ID to fetch orders for (optional, defaults to current user)"),
+          limit: z.number().optional().default(10).describe("Number of orders to fetch (default: 10)"),
+          status: z.enum(["PENDING", "PAID", "FAILED", "CANCELLED"]).optional().describe("Filter by order status"),
         }),
-        execute: async ({ flightNumber, date }) => {
-          const flightStatus = await generateSampleFlightStatus({
-            flightNumber,
-            date,
-          });
-
-          return flightStatus;
-        },
-      },
-      searchFlights: {
-        description: "Search for flights based on the given parameters",
-        parameters: z.object({
-          origin: z.string().describe("Origin airport or city"),
-          destination: z.string().describe("Destination airport or city"),
-        }),
-        execute: async ({ origin, destination }) => {
-          const results = await generateSampleFlightSearchResults({
-            origin,
-            destination,
-          });
-
-          return results;
-        },
-      },
-      selectSeats: {
-        description: "Select seats for a flight",
-        parameters: z.object({
-          flightNumber: z.string().describe("Flight number"),
-        }),
-        execute: async ({ flightNumber }) => {
-          const seats = await generateSampleSeatSelection({ flightNumber });
-          return seats;
-        },
-      },
-      createReservation: {
-        description: "Display pending reservation details",
-        parameters: z.object({
-          seats: z.string().array().describe("Array of selected seat numbers"),
-          flightNumber: z.string().describe("Flight number"),
-          departure: z.object({
-            cityName: z.string().describe("Name of the departure city"),
-            airportCode: z.string().describe("Code of the departure airport"),
-            timestamp: z.string().describe("ISO 8601 date of departure"),
-            gate: z.string().describe("Departure gate"),
-            terminal: z.string().describe("Departure terminal"),
-          }),
-          arrival: z.object({
-            cityName: z.string().describe("Name of the arrival city"),
-            airportCode: z.string().describe("Code of the arrival airport"),
-            timestamp: z.string().describe("ISO 8601 date of arrival"),
-            gate: z.string().describe("Arrival gate"),
-            terminal: z.string().describe("Arrival terminal"),
-          }),
-          passengerName: z.string().describe("Name of the passenger"),
-        }),
-        execute: async (props) => {
-          const { totalPriceInUSD } = await generateReservationPrice(props);
-          const session = await auth();
-
-          const id = generateUUID();
-
-          if (session && session.user && session.user.id) {
-            await createReservation({
-              id,
-              userId: session.user.id,
-              details: { ...props, totalPriceInUSD },
-            });
-
-            return { id, ...props, totalPriceInUSD };
-          } else {
-            return {
-              error: "User is not signed in to perform this action!",
-            };
-          }
-        },
-      },
-      authorizePayment: {
-        description:
-          "User will enter credentials to authorize payment, wait for user to repond when they are done",
-        parameters: z.object({
-          reservationId: z
-            .string()
-            .describe("Unique identifier for the reservation"),
-        }),
-        execute: async ({ reservationId }) => {
-          return { reservationId };
-        },
-      },
-      verifyPayment: {
-        description: "Verify payment status",
-        parameters: z.object({
-          reservationId: z
-            .string()
-            .describe("Unique identifier for the reservation"),
-        }),
-        execute: async ({ reservationId }) => {
-          const reservation = await getReservationById({ id: reservationId });
-
-          if (reservation.hasCompletedPayment) {
-            return { hasCompletedPayment: true };
-          } else {
-            return { hasCompletedPayment: false };
-          }
-        },
-      },
-      displayBoardingPass: {
-        description: "Display a boarding pass",
-        parameters: z.object({
-          reservationId: z
-            .string()
-            .describe("Unique identifier for the reservation"),
-          passengerName: z
-            .string()
-            .describe("Name of the passenger, in title case"),
-          flightNumber: z.string().describe("Flight number"),
-          seat: z.string().describe("Seat number"),
-          departure: z.object({
-            cityName: z.string().describe("Name of the departure city"),
-            airportCode: z.string().describe("Code of the departure airport"),
-            airportName: z.string().describe("Name of the departure airport"),
-            timestamp: z.string().describe("ISO 8601 date of departure"),
-            terminal: z.string().describe("Departure terminal"),
-            gate: z.string().describe("Departure gate"),
-          }),
-          arrival: z.object({
-            cityName: z.string().describe("Name of the arrival city"),
-            airportCode: z.string().describe("Code of the arrival airport"),
-            airportName: z.string().describe("Name of the arrival airport"),
-            timestamp: z.string().describe("ISO 8601 date of arrival"),
-            terminal: z.string().describe("Arrival terminal"),
-            gate: z.string().describe("Arrival gate"),
-          }),
-        }),
-        execute: async (boardingPass) => {
-          return boardingPass;
+        execute: async ({ userId, limit, status }) => {
+          const result = await displayOrdersFunction({ userId, limit, status });
+          return result;
         },
       },
       browsePublishers: {
@@ -247,6 +184,83 @@ export async function POST(request: Request) {
         execute: async ({ publisherId }) => {
           const details = await getPublisherDetails(publisherId);
           return details;
+        },
+      },
+      addToCart: {
+        description: "Add a publisher or product to the shopping cart",
+        parameters: z.object({
+          type: z.enum(["publisher", "product"]).describe("Type of item to add"),
+          name: z.string().describe("Name of the item"),
+          price: z.number().describe("Price of the item in USD"),
+          quantity: z.number().optional().default(1).describe("Quantity to add"),
+          metadata: z.object({
+            publisherId: z.string().optional(),
+            website: z.string().optional(),
+            niche: z.array(z.string()).optional(),
+            dr: z.number().optional(),
+            da: z.number().optional(),
+          }).optional().describe("Additional metadata about the item"),
+        }),
+        execute: async ({ type, name, price, quantity, metadata }) => {
+          const result = await addToCart({ type, name, price, quantity, metadata });
+          return result;
+        },
+      },
+      removeFromCart: {
+        description: "Remove an item from the shopping cart",
+        parameters: z.object({
+          itemId: z.string().describe("Unique identifier of the item to remove"),
+        }),
+        execute: async ({ itemId }) => {
+          const result = await removeFromCart({ itemId });
+          return result;
+        },
+      },
+      viewCart: {
+        description: "View the current contents of the shopping cart",
+        parameters: z.object({}),
+        execute: async () => {
+          const result = await viewCart();
+          return result;
+        },
+      },
+      clearCart: {
+        description: "Clear all items from the shopping cart",
+        parameters: z.object({}),
+        execute: async () => {
+          const result = await clearCart();
+          return result;
+        },
+      },
+      updateCartItemQuantity: {
+        description: "Update the quantity of an item in the shopping cart",
+        parameters: z.object({
+          itemId: z.string().describe("Unique identifier of the item to update"),
+          quantity: z.number().describe("New quantity for the item"),
+        }),
+        execute: async ({ itemId, quantity }) => {
+          const result = await updateCartItemQuantity({ itemId, quantity });
+          return result;
+        },
+      },
+      processPayment: {
+        description: "User is ready to proceed with payment for cart items. Wait for user confirmation that they are done adding items.",
+        parameters: z.object({
+          cartItems: z.array(z.object({
+            id: z.string(),
+            name: z.string(),
+            price: z.number(),
+            quantity: z.number(),
+          })).describe("Items in the cart to process payment for"),
+        }),
+        execute: async ({ cartItems }) => {
+          const totalAmount = cartItems.reduce((sum: number, item: any) => sum + (item.price * item.quantity), 0);
+          return {
+            message: "Ready to process payment! I'll now display the Stripe payment component for you to complete your purchase.",
+            totalAmount,
+            itemCount: cartItems.length,
+            items: cartItems,
+          };
         },
       },
     },

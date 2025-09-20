@@ -1,0 +1,50 @@
+{
+  "id": "0002_manual_schema_update",
+  "prevId": "0001_cuddly_kinsey_walden",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "Chat": {
+      "name": "Chat",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "hasDefault": true,
+          "default": "gen_random_uuid()"
+        },
+        "createdAt": {
+          "name": "createdAt",
+          "type": "timestamp",
+          "notNull": true
+        },
+        "messages": {
+          "name": "messages",
+          "type": "json",
+          "notNull": true
+        },
+        "userId": {
+          "name": "userId",
+          "type": "varchar",
+          "notNull": true,
+          "dataType": "varchar(255)"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {}
+    }
+  },
+  "enums": {},
+  "schemas": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
+

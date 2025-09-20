@@ -1,7 +1,7 @@
 "use client";
 
 import { Star, ExternalLink, TrendingUp, Heart, ShoppingCart } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import { Button } from "../ui/button";
 
@@ -53,11 +53,13 @@ interface PublishersResultsProps {
     };
     error?: string;
   };
+  onAddToCart?: (publisher: PublisherData) => void;
+  onRemoveFromCart?: (publisherId: string) => void;
+  cartItems?: Set<string>;
 }
 
-export function PublishersResults({ results }: PublishersResultsProps) {
+export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cartItems }: PublishersResultsProps) {
   const [wishlist, setWishlist] = useState<Set<string>>(new Set());
-  const [cart, setCart] = useState<Set<string>>(new Set());
 
   const toggleWishlist = (publisherId: string) => {
     setWishlist(prev => {
@@ -71,16 +73,14 @@ export function PublishersResults({ results }: PublishersResultsProps) {
     });
   };
 
-  const toggleCart = (publisherId: string) => {
-    setCart(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(publisherId)) {
-        newSet.delete(publisherId);
-      } else {
-        newSet.add(publisherId);
-      }
-      return newSet;
-    });
+  const toggleCart = (publisher: PublisherData) => {
+    const isInCart = cartItems?.has(publisher.id) || false;
+    
+    if (isInCart) {
+      onRemoveFromCart?.(publisher.id);
+    } else {
+      onAddToCart?.(publisher);
+    }
   };
 
   const getSpamColor = (level: string) => {
@@ -313,12 +313,12 @@ export function PublishersResults({ results }: PublishersResultsProps) {
                     <div className="flex items-center space-x-2">
                       <Button
                         size="sm"
-                        variant={cart.has(publisher.id) ? "default" : "outline"}
-                        onClick={() => toggleCart(publisher.id)}
+                        variant={cartItems?.has(publisher.id) ? "default" : "outline"}
+                        onClick={() => toggleCart(publisher)}
                         className="text-xs"
                       >
                         <ShoppingCart className="h-3 w-3 mr-1" />
-                        {cart.has(publisher.id) ? "In Cart" : "Add to Cart"}
+                        {cartItems?.has(publisher.id) ? "In Cart" : "Add to Cart"}
                       </Button>
                       <Button
                         size="sm"

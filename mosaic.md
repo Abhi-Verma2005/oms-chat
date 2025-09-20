@@ -4,11 +4,123 @@ This document outlines the comprehensive plan for transforming all Mosaic app fe
 
 ## 🏗️ Architecture Overview
 
-The transformation follows the pattern established in the [TOOL_CREATION_GUIDE.md](./TOOL_CREATION_GUIDE.md):
-1. **AI Tool Function** (`ai/actions.ts`) - Core business logic and API calls
+The transformation follows a standardized pattern for creating AI-powered chat tools:
+1. **AI Tool Function** (`ai/actions/`) - Core business logic and API calls
 2. **Chat Route** (`app/(chat)/api/chat/route.ts`) - Tool registration and AI integration
 3. **UI Component** (`components/oms/`) - Display component for tool results
 4. **Message Handler** (`components/custom/message.tsx`) - Tool invocation display
+
+## 🛠️ Tool Creation Guide
+
+### Step-by-Step Process for Adding New Tools
+
+#### 1. Create AI Tool Function (`ai/actions/user/[tool-name].ts`)
+```typescript
+"use server";
+
+import { z } from "zod";
+
+// Define input schema
+const toolSchema = z.object({
+  // Define parameters based on tool requirements
+});
+
+export async function toolNameFunction(params: z.infer<typeof toolSchema>) {
+  try {
+    // Implement business logic
+    // Fetch data from external APIs or database
+    // Transform data as needed
+    
+    return {
+      success: true,
+      data: transformedData,
+      message: "Tool executed successfully"
+    };
+  } catch (error) {
+    return {
+      success: false,
+      error: error.message,
+      data: null
+    };
+  }
+}
+
+// Export tool configuration
+export const toolNameTool = {
+  name: "tool_name",
+  description: "Description of what this tool does",
+  parameters: toolSchema,
+  execute: toolNameFunction
+};
+```
+
+#### 2. Register Tool in Main Actions (`ai/actions.ts`)
+```typescript
+import { toolNameTool } from "./actions/user/tool-name";
+
+export const tools = [
+  // ... existing tools
+  toolNameTool,
+];
+```
+
+#### 3. Create UI Component (`components/oms/user/tool-name-results.tsx`)
+```typescript
+import React from "react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+
+interface ToolNameResultsProps {
+  data: any;
+  success: boolean;
+  error?: string;
+  message?: string;
+}
+
+export function ToolNameResults({ data, success, error, message }: ToolNameResultsProps) {
+  if (!success) {
+    return (
+      <Card className="border-red-200 bg-red-50">
+        <CardContent className="p-4">
+          <p className="text-red-600">Error: {error}</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Tool Results</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {/* Render data using Mosaic components */}
+        {/* Use consistent dark mode backgrounds and purple buttons */}
+      </CardContent>
+    </Card>
+  );
+}
+```
+
+#### 4. Update Message Handler (`components/custom/message.tsx`)
+```typescript
+import { ToolNameResults } from "@/components/oms/user/tool-name-results";
+
+// Add case in the switch statement
+case "tool_name":
+  return <ToolNameResults {...result} />;
+```
+
+#### 5. Test the Tool
+- Use natural language queries in chat
+- Verify tool execution and UI rendering
+- Test error handling scenarios
+
+### Key Principles
+- **Consistent UI**: Use Mosaic components for all UI elements
+- **Error Handling**: Always include proper error handling and user feedback
+- **Type Safety**: Use TypeScript with proper schemas
+- **Performance**: Implement efficient data fetching and caching
+- **User Experience**: Provide clear feedback and intuitive interactions
 
 ## 📁 Folder Structure for Modularity
 
@@ -32,7 +144,9 @@ oms-chat/
 │   │   │   ├── dashboard-analytics.ts
 │   │   │   ├── case-studies.ts
 │   │   │   ├── publishers-browsing.ts
+│   │   │   ├── publishers-backlinking.ts
 │   │   │   ├── cart-management.ts
+│   │   │   ├── orders-display.ts
 │   │   │   ├── wishlist-management.ts
 │   │   │   ├── orders-tracking.ts
 │   │   │   ├── payment-processing.ts
@@ -104,7 +218,9 @@ oms-chat/
 │           ├── dashboard-analytics-results.tsx
 │           ├── case-studies-results.tsx
 │           ├── publishers-browsing-results.tsx
+│           ├── publishers-backlinking-results.tsx
 │           ├── cart-management-results.tsx
+│           ├── orders-display-results.tsx
 │           ├── wishlist-management-results.tsx
 │           ├── orders-tracking-results.tsx
 │           ├── payment-processing-results.tsx
@@ -275,8 +391,22 @@ oms-chat/
 - **Search Publishers** - Quick search across publisher database
 - **Publisher Analytics** - Track publisher performance and trends
 - **Publisher Recommendations** - Get personalized publisher suggestions
+- **Publishers Backlinking Websites** - Fetch and analyze backlinking websites for publishers
+- **Publisher Payment Processing** - Complete payment flow for publisher services
 
-### 4. Cart Management Tools
+### 4. Publishers Backlinking & Payment Flow Tools
+- **Fetch Backlinking Websites** - Retrieve websites that link to specific publishers
+- **Analyze Backlink Quality** - Evaluate the quality and relevance of backlinks
+- **Backlink Metrics Analysis** - Calculate domain authority, traffic, and SEO metrics
+- **Publisher Backlink Reports** - Generate comprehensive backlink analysis reports
+- **Backlink Payment Processing** - Handle payments for backlink services
+- **Payment Status Tracking** - Monitor payment completion and transaction status
+- **Backlink Order Management** - Manage backlink orders and delivery
+- **Payment History** - View complete payment history for backlink services
+- **Backlink Analytics** - Track backlink performance and ROI
+- **Payment Method Management** - Add, update, and manage payment methods for backlinks
+
+### 5. Cart Management Tools
 - **Add to Cart** - Add items to shopping cart
 - **Remove from Cart** - Remove items from cart
 - **Update Quantities** - Modify item quantities in cart
@@ -285,7 +415,7 @@ oms-chat/
 - **Save Cart** - Save cart for later completion
 - **Cart Analytics** - Track cart behavior and conversion
 
-### 5. Wishlist Management Tools
+### 6. Wishlist Management Tools
 - **Add to Wishlist** - Save items for later consideration
 - **Remove from Wishlist** - Remove items from wishlist
 - **View Wishlist** - See all saved wishlist items
@@ -293,7 +423,7 @@ oms-chat/
 - **Manage Wishlist Items** - Organize and categorize wishlist
 - **Wishlist Notifications** - Get alerts for wishlist item changes
 
-### 6. Orders Tracking Tools
+### 7. Orders Tracking Tools
 - **View Order History** - Complete order history and details
 - **Track Order Status** - Real-time order status updates
 - **View Order Details** - Detailed order information
@@ -301,7 +431,7 @@ oms-chat/
 - **Order Analytics** - Track personal order patterns
 - **Reorder Items** - Quickly reorder previous purchases
 
-### 7. Payment Processing Tools
+### 8. Payment Processing Tools
 - **Process Payments** - Complete payment transactions
 - **Manage Payment Methods** - Add, update, and remove payment methods
 - **Billing Management** - Handle billing and subscription details
@@ -309,7 +439,7 @@ oms-chat/
 - **Payment Analytics** - Track spending patterns and trends
 - **Refund Requests** - Request refunds for eligible orders
 
-### 8. Profile Management Tools
+### 9. Profile Management Tools
 - **Update Profile** - Modify personal information and settings
 - **Manage Settings** - Configure application preferences
 - **Change Password** - Update account security credentials
@@ -317,7 +447,7 @@ oms-chat/
 - **Profile Analytics** - Track profile completeness and engagement
 - **Account Security** - Manage security settings and 2FA
 
-### 9. Community Features Tools
+### 10. Community Features Tools
 - **View Community Feed** - See community posts and updates
 - **Post Updates** - Share content with the community
 - **Interact with Posts** - Like, comment, and share posts
@@ -325,7 +455,7 @@ oms-chat/
 - **Community Analytics** - Track community engagement
 - **Follow Users** - Follow other community members
 
-### 10. Task Management Tools
+### 11. Task Management Tools
 - **Create Tasks** - Add new tasks and assignments
 - **Manage Kanban Boards** - Organize tasks in visual boards
 - **Track Task Progress** - Monitor task completion status
@@ -333,7 +463,7 @@ oms-chat/
 - **Set Deadlines** - Manage task timelines and due dates
 - **Task Analytics** - Track productivity and task completion
 
-### 11. Job Management Tools
+### 12. Job Management Tools
 - **Browse Jobs** - Explore available job opportunities
 - **Apply for Jobs** - Submit job applications
 - **Track Applications** - Monitor application status
@@ -341,7 +471,7 @@ oms-chat/
 - **View Job Details** - Complete job information and requirements
 - **Job Analytics** - Track application success and patterns
 
-### 12. Search Functionality Tools
+### 13. Search Functionality Tools
 - **Search Content** - Search across all available content
 - **Filter Search Results** - Refine search results by criteria
 - **Save Search Queries** - Save frequently used searches
@@ -349,7 +479,7 @@ oms-chat/
 - **Search Analytics** - Analyze search patterns and effectiveness
 - **Advanced Search** - Use complex search queries and filters
 
-### 13. Notifications Tools
+### 14. Notifications Tools
 - **View Notifications** - See all user notifications
 - **Mark as Read** - Update notification read status
 - **Manage Notification Preferences** - Configure notification settings
@@ -357,7 +487,7 @@ oms-chat/
 - **Notification Analytics** - Track notification engagement
 - **Notification History** - View historical notification data
 
-### 14. Feedback System Tools
+### 15. Feedback System Tools
 - **Submit Feedback** - Provide feedback and suggestions
 - **View Feedback Status** - Track feedback submission status
 - **Track Feedback Responses** - Monitor admin responses
@@ -365,7 +495,7 @@ oms-chat/
 - **Feedback Analytics** - Track feedback submission patterns
 - **Feedback History** - View all submitted feedback
 
-### 15. Saved Views Tools
+### 16. Saved Views Tools
 - **Create Saved Views** - Save frequently used views and filters
 - **Manage Saved Views** - Organize and update saved views
 - **Share Saved Views** - Share views with team members
@@ -373,7 +503,7 @@ oms-chat/
 - **Saved View Analytics** - Track view usage and popularity
 - **Export Saved Views** - Export view configurations
 
-### 16. Activity Tracking Tools
+### 17. Activity Tracking Tools
 - **View Activity History** - Complete activity log and history
 - **Track Usage Patterns** - Analyze personal usage behavior
 - **Analyze Activity Trends** - Identify usage trends and patterns
@@ -381,7 +511,7 @@ oms-chat/
 - **Activity Analytics** - Track engagement and productivity
 - **Set Activity Goals** - Define and track activity objectives
 
-### 17. Credit Management Tools
+### 18. Credit Management Tools
 - **View Credit Balance** - Check current credit availability
 - **Track Credit Usage** - Monitor credit consumption
 - **Manage Credit Settings** - Configure credit preferences
@@ -389,7 +519,7 @@ oms-chat/
 - **Credit Analytics** - Track credit usage patterns
 - **Credit Alerts** - Get notifications about credit status
 
-### 18. MFA Management Tools
+### 19. MFA Management Tools
 - **Enable/Disable MFA** - Configure multi-factor authentication
 - **Manage Authenticators** - Set up and manage authenticator apps
 - **Generate Backup Codes** - Create and manage backup codes
@@ -397,7 +527,7 @@ oms-chat/
 - **MFA Analytics** - Track MFA usage and security
 - **MFA Recovery** - Handle MFA recovery scenarios
 
-### 19. Onboarding Tools
+### 20. Onboarding Tools
 - **Complete Onboarding Profile** - Finish user setup process
 - **Manage Onboarding Steps** - Track onboarding progress
 - **Track Onboarding Progress** - Monitor completion status
@@ -405,7 +535,7 @@ oms-chat/
 - **Onboarding Analytics** - Track onboarding effectiveness
 - **Onboarding Help** - Get assistance with onboarding
 
-### 20. Search Interests Tools
+### 21. Search Interests Tools
 - **Manage Search Interests** - Configure search preferences
 - **Track Interest Trends** - Analyze interest patterns
 - **Configure Interest Alerts** - Set up interest-based notifications
@@ -413,7 +543,7 @@ oms-chat/
 - **Interest Recommendations** - Get personalized suggestions
 - **Export Interest Data** - Download interest information
 
-### 21. Financial Analytics Tools
+### 22. Financial Analytics Tools
 - **View Financial Dashboard** - Complete financial overview
 - **Track Transactions** - Monitor all financial transactions
 - **Analyze Spending Patterns** - Identify spending trends
@@ -421,7 +551,7 @@ oms-chat/
 - **Financial Forecasting** - Predict future financial trends
 - **Export Financial Data** - Download financial information
 
-### 22. SEO Analytics Tools
+### 23. SEO Analytics Tools
 - **View SEO Metrics** - Track SEO performance indicators
 - **Track Keyword Rankings** - Monitor keyword positions
 - **Analyze Backlink Performance** - Evaluate backlink effectiveness
@@ -429,7 +559,7 @@ oms-chat/
 - **SEO Reporting** - Generate SEO performance reports
 - **SEO Recommendations** - Get SEO improvement suggestions
 
-### 23. Content Management Tools
+### 24. Content Management Tools
 - **Manage Content** - Create and edit content
 - **Track Content Performance** - Monitor content metrics
 - **Analyze Content Metrics** - Deep dive into content analytics
@@ -437,7 +567,7 @@ oms-chat/
 - **Content Calendar** - Plan and schedule content
 - **Content Analytics** - Track content effectiveness
 
-### 24. Integration Management Tools
+### 25. Integration Management Tools
 - **Manage API Integrations** - Configure external API connections
 - **Configure Webhooks** - Set up webhook notifications
 - **Sync External Data** - Synchronize with external systems
@@ -445,7 +575,7 @@ oms-chat/
 - **Integration Analytics** - Track integration performance
 - **Integration Monitoring** - Monitor integration health
 
-### 25. Reporting Tools
+### 26. Reporting Tools
 - **Generate Custom Reports** - Create personalized reports
 - **Schedule Reports** - Set up automated report generation
 - **Export Data** - Download data in various formats
@@ -453,7 +583,7 @@ oms-chat/
 - **Share Reports** - Distribute reports to team members
 - **Report Analytics** - Track report usage and effectiveness
 
-### 26. Automation Tools
+### 27. Automation Tools
 - **Create Automation Rules** - Define automated workflows
 - **Manage Automated Workflows** - Configure and update automations
 - **Configure Triggers** - Set up automation triggers
@@ -461,7 +591,7 @@ oms-chat/
 - **Automation Analytics** - Analyze automation impact
 - **Automation Testing** - Test and validate automations
 
-### 27. Collaboration Tools
+### 28. Collaboration Tools
 - **Share Data** - Share information with team members
 - **Manage Team Access** - Control team permissions
 - **Collaborate on Projects** - Work together on shared projects
@@ -469,7 +599,7 @@ oms-chat/
 - **Team Analytics** - Analyze team performance
 - **Team Communication** - Facilitate team communication
 
-### 28. Data Export Tools
+### 29. Data Export Tools
 - **Export User Data** - Download personal data
 - **Download Reports** - Get report files
 - **Backup Data** - Create data backups
@@ -477,7 +607,7 @@ oms-chat/
 - **Manage Data Retention** - Control data storage policies
 - **Data Analytics** - Track data usage and exports
 
-### 29. Security Management Tools
+### 30. Security Management Tools
 - **Manage Security Settings** - Configure security preferences
 - **View Security Logs** - Monitor security events
 - **Configure Access Controls** - Set up access restrictions
@@ -485,7 +615,7 @@ oms-chat/
 - **Security Analytics** - Analyze security patterns
 - **Security Alerts** - Get security notifications
 
-### 30. Theme Customization Tools
+### 31. Theme Customization Tools
 - **Customize Themes** - Modify visual appearance
 - **Manage Appearance Settings** - Configure UI preferences
 - **Configure UI Preferences** - Set up interface options
@@ -493,7 +623,7 @@ oms-chat/
 - **Theme Analytics** - Track theme usage
 - **Theme Sharing** - Share themes with others
 
-### 31. Help Support Tools
+### 32. Help Support Tools
 - **Access Help Documentation** - View help resources
 - **Submit Support Tickets** - Create support requests
 - **View FAQ** - Access frequently asked questions
@@ -501,7 +631,7 @@ oms-chat/
 - **Track Support Requests** - Monitor support ticket status
 - **Support Analytics** - Track support usage and effectiveness
 
-### 32. Calendar Management Tools
+### 33. Calendar Management Tools
 - **View Calendar** - Display calendar with events and appointments
 - **Create Events** - Add new calendar events and appointments
 - **Manage Schedules** - Organize and update calendar schedules
@@ -509,7 +639,7 @@ oms-chat/
 - **Calendar Analytics** - Analyze calendar usage and patterns
 - **Event Management** - Edit, delete, and manage calendar events
 
-### 33. Campaigns Management Tools
+### 34. Campaigns Management Tools
 - **Create Campaigns** - Set up new marketing campaigns
 - **Manage Campaign Settings** - Configure campaign parameters
 - **Track Campaign Performance** - Monitor campaign metrics and results
@@ -517,7 +647,7 @@ oms-chat/
 - **Campaign Optimization** - Improve campaign effectiveness
 - **Campaign Reporting** - Generate campaign performance reports
 
-### 34. Invoices Management Tools
+### 35. Invoices Management Tools
 - **View Invoices** - Access all invoice records
 - **Generate Invoices** - Create new invoices and billing documents
 - **Manage Billing** - Handle billing and payment processes
@@ -525,7 +655,7 @@ oms-chat/
 - **Invoice Analytics** - Analyze billing patterns and trends
 - **Invoice Templates** - Manage invoice templates and formats
 
-### 35. Customers Management Tools
+### 36. Customers Management Tools
 - **Manage Customer Data** - Store and update customer information
 - **Track Customer Interactions** - Monitor customer engagement
 - **Analyze Customer Behavior** - Understand customer patterns
@@ -533,7 +663,7 @@ oms-chat/
 - **Customer Segmentation** - Organize customers into groups
 - **Customer Communication** - Manage customer communications
 
-### 36. Messages Management Tools
+### 37. Messages Management Tools
 - **Send Messages** - Create and send messages to users
 - **Manage Conversations** - Organize message threads
 - **Track Message History** - View past message exchanges
@@ -541,7 +671,7 @@ oms-chat/
 - **Message Templates** - Create and manage message templates
 - **Message Scheduling** - Schedule messages for later delivery
 
-### 37. Inbox Management Tools
+### 38. Inbox Management Tools
 - **Manage Inbox** - Organize incoming messages and communications
 - **Filter Communications** - Sort and filter inbox content
 - **Inbox Analytics** - Track inbox usage and patterns
@@ -549,7 +679,7 @@ oms-chat/
 - **Inbox Automation** - Set up automated inbox rules
 - **Inbox Search** - Search through inbox content
 
-### 38. Meetups Management Tools
+### 39. Meetups Management Tools
 - **Create Meetups** - Organize new meetup events
 - **Join Meetups** - Participate in existing meetups
 - **Manage Meetup Schedules** - Organize meetup timing and logistics
@@ -557,7 +687,7 @@ oms-chat/
 - **Meetup Networking** - Connect with other participants
 - **Meetup Feedback** - Collect and manage meetup feedback
 
-### 39. Profile Management Extended Tools
+### 40. Profile Management Extended Tools
 - **Manage Profile Visibility** - Control profile visibility settings
 - **Edit Profile Details** - Update personal and professional information
 - **Manage Profile Settings** - Configure profile preferences
@@ -565,7 +695,7 @@ oms-chat/
 - **Profile Customization** - Personalize profile appearance
 - **Profile Privacy** - Manage privacy and security settings
 
-### 40. Components Library Tools
+### 41. Components Library Tools
 - **Browse UI Components** - Explore available UI components
 - **Test Components** - Preview and test component functionality
 - **Customize Components** - Modify component appearance and behavior
@@ -573,7 +703,7 @@ oms-chat/
 - **Component Documentation** - Access component guides and examples
 - **Component Sharing** - Share custom components with others
 
-### 41. Utility Tools
+### 42. Utility Tools
 - **Access Utility Functions** - Use various utility tools and functions
 - **Manage Utility Settings** - Configure utility preferences
 - **Track Utility Usage** - Monitor utility tool usage
@@ -581,7 +711,7 @@ oms-chat/
 - **Utility Customization** - Customize utility tool behavior
 - **Utility Integration** - Integrate utilities with other tools
 
-### 42. Onboarding Extended Tools
+### 43. Onboarding Extended Tools
 - **Complete Onboarding Steps** - Finish all onboarding requirements
 - **Manage Onboarding Progress** - Track onboarding completion status
 - **Customize Onboarding Flow** - Personalize onboarding experience
@@ -589,7 +719,7 @@ oms-chat/
 - **Onboarding Help** - Get assistance with onboarding process
 - **Onboarding Feedback** - Provide feedback on onboarding experience
 
-### 43. Changelog Tools
+### 44. Changelog Tools
 - **View Changelog** - Access application changelog and updates
 - **Track Updates** - Monitor new features and improvements
 - **Manage Changelog Preferences** - Configure changelog notifications
@@ -597,7 +727,7 @@ oms-chat/
 - **Changelog Search** - Search through changelog entries
 - **Changelog Filtering** - Filter changelog by category or date
 
-### 44. Roadmap Tools
+### 45. Roadmap Tools
 - **View Product Roadmap** - Access product development roadmap
 - **Track Feature Progress** - Monitor feature development status
 - **Manage Roadmap Preferences** - Configure roadmap notifications
@@ -605,7 +735,7 @@ oms-chat/
 - **Roadmap Voting** - Vote on upcoming features
 - **Roadmap Feedback** - Provide feedback on roadmap items
 
-### 45. FAQ Tools
+### 46. FAQ Tools
 - **Browse FAQ** - Access frequently asked questions
 - **Search FAQ** - Find specific FAQ entries
 - **Manage FAQ Preferences** - Configure FAQ display settings
@@ -613,7 +743,7 @@ oms-chat/
 - **FAQ Feedback** - Provide feedback on FAQ content
 - **FAQ Suggestions** - Suggest new FAQ entries
 
-### 46. Empty State Tools
+### 47. Empty State Tools
 - **Manage Empty States** - Customize empty state displays
 - **Customize Empty State Messages** - Personalize empty state content
 - **Track Empty State Usage** - Monitor empty state frequency
@@ -621,7 +751,7 @@ oms-chat/
 - **Empty State Templates** - Create reusable empty state templates
 - **Empty State A/B Testing** - Test different empty state variations
 
-### 47. 404 Error Tools
+### 48. 404 Error Tools
 - **Customize 404 Pages** - Design custom 404 error pages
 - **Manage 404 Redirects** - Set up redirects for 404 errors
 - **Track 404 Errors** - Monitor 404 error frequency and sources
@@ -629,7 +759,7 @@ oms-chat/
 - **404 Error Prevention** - Identify and fix broken links
 - **404 Error Reporting** - Generate 404 error reports
 
-### 48. Finance Tools
+### 49. Finance Tools
 - **Manage Financial Data** - Handle financial information and records
 - **Track Transactions** - Monitor financial transactions
 - **Analyze Financial Metrics** - Generate financial insights
@@ -637,7 +767,7 @@ oms-chat/
 - **Financial Reporting** - Create financial reports and summaries
 - **Financial Forecasting** - Predict future financial trends
 
-### 49. Debug Tools
+### 50. Debug Tools
 - **Access Debug Information** - View system debug data
 - **Manage Debug Settings** - Configure debug preferences
 - **Track Debug Usage** - Monitor debug tool usage
@@ -645,7 +775,7 @@ oms-chat/
 - **Debug Logging** - Manage debug log settings
 - **Debug Troubleshooting** - Use debug tools for problem solving
 
-### 50. Test Chatbot Tools
+### 51. Test Chatbot Tools
 - **Test Chatbot Functionality** - Test AI chatbot features
 - **Manage Chatbot Settings** - Configure chatbot behavior
 - **Track Chatbot Usage** - Monitor chatbot interactions
@@ -653,7 +783,7 @@ oms-chat/
 - **Chatbot Training** - Improve chatbot responses
 - **Chatbot Testing** - Test chatbot with different scenarios
 
-### 51. Search Demo Tools
+### 52. Search Demo Tools
 - **Demo Search Functionality** - Demonstrate search features
 - **Test Search Features** - Test search capabilities
 - **Manage Search Settings** - Configure search preferences
@@ -672,8 +802,9 @@ oms-chat/
 ### Phase 2: Core User Tools (Weeks 3-4)
 1. Dashboard Analytics Tools
 2. Publishers Browsing Tools
-3. Cart Management Tools
-4. Orders Tracking Tools
+3. Publishers Backlinking & Payment Flow Tools
+4. Orders Display Tools
+5. Cart Management Tools
 
 ### Phase 3: E-commerce Tools (Weeks 5-6)
 1. Payment Processing Tools

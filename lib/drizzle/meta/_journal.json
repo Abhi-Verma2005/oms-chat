@@ -8,6 +8,20 @@
       "when": 1728635586378,
       "tag": "0000_absurd_joshua_kane",
       "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "7",
+      "when": 1758359631011,
+      "tag": "0001_cuddly_kinsey_walden",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1758359700000,
+      "tag": "0002_manual_schema_update",
+      "breakpoints": true
     }
   ]
 }

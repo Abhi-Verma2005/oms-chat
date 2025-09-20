@@ -19,13 +19,20 @@ import { signOutAction } from "@/lib/actions";
 
 interface LeftSidebarProps {
   user?: any;
+  onCollapseChange?: (isCollapsed: boolean) => void;
 }
 
-export function LeftSidebar({ user }: LeftSidebarProps) {
+export function LeftSidebar({ user, onCollapseChange }: LeftSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
 
+  const handleToggleCollapse = () => {
+    const newCollapsed = !isCollapsed;
+    setIsCollapsed(newCollapsed);
+    onCollapseChange?.(newCollapsed);
+  };
+
   return (
-    <div className={`flex flex-col h-full bg-card border-r border-border transition-all duration-300 ${
+    <div className={`flex flex-col h-screen bg-card border-r border-border transition-all duration-300 ${
       isCollapsed ? 'w-16' : 'w-64'
     }`}>
       {/* Top Section - Logo & App Name + Toggle Button (20%) */}
@@ -69,7 +76,7 @@ export function LeftSidebar({ user }: LeftSidebarProps) {
           <Button
             variant="ghost"
             size="sm"
-            onClick={() => setIsCollapsed(!isCollapsed)}
+            onClick={handleToggleCollapse}
             className="p-1 h-6 w-6 opacity-70 hover:opacity-100 transition-all duration-300"
             title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >

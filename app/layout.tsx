@@ -1,9 +1,8 @@
 import { Metadata } from "next";
 import { Toaster } from "sonner";
 
-import { ThemeProvider } from "../components/custom/theme-provider";
-import { SplitScreenProvider } from "../contexts/SplitScreenProvider";
-import { auth } from "@/app/(auth)/auth";
+import { Providers } from "../components/providers";
+import { auth } from "./(auth)/auth";
 
 import "./globals.css";
 
@@ -23,17 +22,10 @@ export default async function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          enableSystem={false}
-          disableTransitionOnChange={false}
-        >
-          <SplitScreenProvider>
-            <Toaster position="top-center" />
-            {children}
-          </SplitScreenProvider>
-        </ThemeProvider>
+        <Providers>
+          <Toaster position="top-center" />
+          {children}
+        </Providers>
       </body>
     </html>
   );

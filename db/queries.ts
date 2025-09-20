@@ -1,35 +1,54 @@
 import "server-only";
 
-import { genSaltSync, hashSync } from "bcrypt-ts";
 import { desc, eq } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
+import { genSaltSync, hashSync } from "bcrypt-ts";
 
-import { user, chat, User, reservation } from "./schema";
+import { chat } from "./schema";
+import { external_db } from "@/lib/external-db";
+import { users } from "@/lib/drizzle-external/schema";
 
-// Optionally, if not using email/pass login, you can
-// use the Drizzle adapter for Auth.js / NextAuth
-// https://authjs.dev/reference/adapter/drizzle
+// Native database connection
 let client = postgres(`${process.env.POSTGRES_URL!}?sslmode=require`);
 let db = drizzle(client);
 
-export async function getUser(email: string): Promise<Array<User>> {
+export async function getUser(email: string) {
   try {
-    return await db.select().from(user).where(eq(user.email, email));
+    return await external_db.select().from(users).where(eq(users.email, email));
   } catch (error) {
-    console.error("Failed to get user from database");
+    console.error("Failed to get user from external database");
+    throw error;
+  }
+}
+
+export async function getUserById(id: string) {
+  try {
+    const [user] = await external_db.select().from(users).where(eq(users.id, id));
+    return user;
+  } catch (error) {
+    console.error("Failed to get user by ID from external database");
     throw error;
   }
 }
 
 export async function createUser(email: string, password: string) {
-  let salt = genSaltSync(10);
-  let hash = hashSync(password, salt);
-
   try {
-    return await db.insert(user).values({ email, password: hash });
+    const salt = genSaltSync(10);
+    const hash = hashSync(password, salt);
+    
+    // Generate a UUID for the user ID (matching the external database schema)
+    const userId = crypto.randomUUID();
+    
+    return await external_db.insert(users).values({
+      id: userId,
+      email,
+      password: hash,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    });
   } catch (error) {
-    console.error("Failed to create user in database");
+    console.error("Failed to create user in external database");
     throw error;
   }
 }
@@ -99,44 +118,3 @@ export async function getChatById({ id }: { id: string }) {
   }
 }
 
-export async function createReservation({
-  id,
-  userId,
-  details,
-}: {
-  id: string;
-  userId: string;
-  details: any;
-}) {
-  return await db.insert(reservation).values({
-    id,
-    createdAt: new Date(),
-    userId,
-    hasCompletedPayment: false,
-    details: JSON.stringify(details),
-  });
-}
-
-export async function getReservationById({ id }: { id: string }) {
-  const [selectedReservation] = await db
-    .select()
-    .from(reservation)
-    .where(eq(reservation.id, id));
-
-  return selectedReservation;
-}
-
-export async function updateReservation({
-  id,
-  hasCompletedPayment,
-}: {
-  id: string;
-  hasCompletedPayment: boolean;
-}) {
-  return await db
-    .update(reservation)
-    .set({
-      hasCompletedPayment,
-    })
-    .where(eq(reservation.id, id));
-}

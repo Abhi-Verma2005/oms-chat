@@ -12,6 +12,7 @@ import { Overview } from "./overview";
 import { RightPanel } from "./RightPanel";
 import { useScrollToBottom } from "./use-scroll-to-bottom";
 import { useSplitScreen } from "../../contexts/SplitScreenProvider";
+import { useUserInfo } from "../../contexts/UserInfoProvider";
 
 export function Chat({
   id,
@@ -22,10 +23,21 @@ export function Chat({
   initialMessages: Array<Message>;
   user?: any;
 }) {
+  const { userInfo } = useUserInfo();
+  
   const { messages, handleSubmit, input, setInput, append, isLoading, stop } =
     useChat({
       id,
-      body: { id },
+      body: { 
+        id,
+        userInfo: userInfo ? {
+          id: userInfo.id,
+          email: userInfo.email,
+          name: userInfo.name,
+          preferences: userInfo.preferences,
+          chatHistory: userInfo.chatHistory,
+        } : null
+      },
       initialMessages,
       maxSteps: 10,
       onFinish: () => {
@@ -39,6 +51,7 @@ export function Chat({
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const { isRightPanelOpen, rightPanelWidth, setRightPanelWidth } = useSplitScreen();
   const [isResizing, setIsResizing] = useState(false);
+  const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Handle mouse move for resizing
@@ -83,14 +96,19 @@ export function Chat({
   return (
     <div 
       ref={containerRef}
-      className="flex flex-row h-dvh bg-background"
+      className="flex flex-row h-dvh bg-background relative"
     >
-      {/* Left Sidebar */}
-      <LeftSidebar user={user} />
+      {/* Left Sidebar - Always overlay */}
+      <div className="absolute left-0 top-0 z-20">
+        <LeftSidebar 
+          user={user} 
+          onCollapseChange={setIsLeftSidebarCollapsed}
+        />
+      </div>
 
-      {/* Main Chat Area */}
+      {/* Main Chat Area - Always full width */}
       <div 
-        className={`flex flex-col justify-center pb-4 md:pb-8 transition-all duration-300 flex-1 ${
+        className={`flex flex-col justify-center pb-4 md:pb-8 transition-all duration-300 w-full ${
           isRightPanelOpen ? 'mr-0' : ''
         }`}
         style={{
@@ -98,7 +116,12 @@ export function Chat({
           maxWidth: isRightPanelOpen ? `calc(100% - ${rightPanelWidth}px)` : '100%'
         }}
       >
-        <div className="flex flex-col justify-between items-center gap-4 h-full">
+        <div 
+          className="flex flex-col justify-between items-center gap-4 h-full"
+          style={{
+            paddingLeft: isLeftSidebarCollapsed ? '0' : '256px' // 256px = w-64 (16rem)
+          }}
+        >
           <div
             ref={messagesContainerRef}
             className="flex flex-col gap-4 size-full items-center overflow-y-auto px-4 md:px-0"

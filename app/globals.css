@@ -2,6 +2,86 @@
 @tailwind components;
 @tailwind utilities;
 
+@keyframes border-light {
+  0% {
+    opacity: 0;
+    transform: translateX(-100%);
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+}
+
+@keyframes typing-cursor {
+  0%, 50% {
+    opacity: 1;
+  }
+  51%, 100% {
+    opacity: 0;
+  }
+}
+
+@keyframes text-stream {
+  0% {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes stream-glow {
+  0% {
+    box-shadow: 0 0 0 rgba(0, 188, 212, 0);
+  }
+  50% {
+    box-shadow: 0 0 8px rgba(0, 188, 212, 0.1);
+  }
+  100% {
+    box-shadow: 0 0 0 rgba(0, 188, 212, 0);
+  }
+}
+
+@keyframes stream-pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+/* Performance optimizations for streaming animations */
+.streaming-content {
+  will-change: transform, opacity;
+  transform: translateZ(0); /* Force hardware acceleration */
+}
+
+/* Optimize cursor animation */
+@keyframes typing-cursor-optimized {
+  0%, 50% {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  51%, 100% {
+    opacity: 0;
+    transform: scaleY(0.8);
+  }
+}
+
+/* Smooth transitions for better performance */
+.streaming-text {
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out;
+  backface-visibility: hidden;
+  perspective: 1000px;
+}
+
 :root {
     --foreground-rgb: 0, 0, 0;
     --background-start-rgb: 214, 219, 220;
@@ -25,58 +105,60 @@
 @layer base {
     :root,
     .light {
-        --background: 0 0% 100%;
-        --foreground: 240 10% 3.9%;
-        --card: 0 0% 100%;
-        --card-foreground: 240 10% 3.9%;
+        /* Light theme with complementary colors to the dark theme */
+        --background: 0 0% 98%; /* very light gray background */
+        --foreground: 0 0% 12%; /* dark text */
+        --card: 0 0% 100%; /* pure white cards */
+        --card-foreground: 0 0% 12%;
         --popover: 0 0% 100%;
-        --popover-foreground: 240 10% 3.9%;
-        --primary: 244 40% 63%;
+        --popover-foreground: 0 0% 12%;
+        --primary: 188 100% 42%; /* same teal accent */
         --primary-foreground: 0 0% 98%;
-        --secondary: 240 4.8% 95.9%;
-        --secondary-foreground: 240 5.9% 10%;
-        --muted: 240 4.8% 95.9%;
-        --muted-foreground: 240 3.8% 46.1%;
-        --accent: 240 4.8% 95.9%;
-        --accent-foreground: 240 5.9% 10%;
+        --secondary: 0 0% 96%; /* very light gray */
+        --secondary-foreground: 0 0% 12%;
+        --muted: 0 0% 96%;
+        --muted-foreground: 0 0% 45%; /* medium gray for secondary text */
+        --accent: 0 0% 96%;
+        --accent-foreground: 0 0% 12%;
         --destructive: 0 84.2% 60.2%;
         --destructive-foreground: 0 0% 98%;
-        --border: 240 5.9% 90%;
-        --input: 240 5.9% 90%;
-        --ring: 246, 47%, 65%;
-        --chart-1: 12 76% 61%;
-        --chart-2: 173 58% 39%;
-        --chart-3: 197 37% 24%;
-        --chart-4: 43 74% 66%;
-        --chart-5: 27 87% 67%;
+        --border: 0 0% 90%; /* light borders */
+        --input: 0 0% 96%;
+        --ring: 188 100% 42%; /* teal focus ring */
+        --chart-1: 300 60% 65%; /* purple for keywords */
+        --chart-2: 200 70% 60%; /* light blue for functions */
+        --chart-3: 25 70% 65%; /* orange for strings */
+        --chart-4: 188 100% 42%; /* teal accent */
+        --chart-5: 0 0% 45%; /* medium gray */
         --radius: 0.75rem;
     }
     .dark {
-        /* Main app dark theme colors matching the Publishers dashboard */
-        --background: 230 25% 10%; /* #1A1A2E - very dark blue-gray */
-        --foreground: 0 0% 98%; /* white text */
-        --card: 230 25% 18%; /* #2C2C4A - dark purple-gray for cards */
-        --card-foreground: 0 0% 98%;
-        --popover: 230 25% 18%;
-        --popover-foreground: 0 0% 98%;
-        --primary: 262 83% 58%; /* purple for primary actions */
-        --primary-foreground: 0 0% 98%;
-        --secondary: 230 25% 22%; /* slightly lighter purple-gray */
-        --secondary-foreground: 0 0% 98%;
-        --muted: 230 25% 22%;
-        --muted-foreground: 0 0% 70%; /* muted text */
-        --accent: 230 25% 22%;
-        --accent-foreground: 0 0% 98%;
+        /* Deep dark theme colors - slightly lighter than almost black */
+        --background: 0 0% 8%; /* #141414 - deep dark gray main background */
+        --foreground: 0 0% 100%; /* #FFFFFF - white primary text */
+        --card: 0 0% 12%; /* #1F1F1F - dark gray for cards and chat bubbles */
+        --card-foreground: 0 0% 100%;
+        --popover: 0 0% 12%;
+        --popover-foreground: 0 0% 100%;
+        --primary: 188 100% 42%; /* #00BCD4 - teal accent color */
+        --primary-foreground: 0 0% 100%;
+        --secondary: 0 0% 12%; /* same as card background */
+        --secondary-foreground: 0 0% 100%;
+        --muted: 0 0% 12%;
+        --muted-foreground: 0 0% 63%; /* #A0A0A0 - light gray for secondary text */
+        --accent: 0 0% 12%;
+        --accent-foreground: 0 0% 100%;
         --destructive: 0 62.8% 30.6%;
-        --destructive-foreground: 0 0% 98%;
-        --border: 230 25% 25%; /* subtle borders */
-        --input: 230 25% 22%;
-        --ring: 262 83% 58%;
-        --chart-1: 220 70% 50%;
-        --chart-2: 160 60% 45%;
-        --chart-3: 30 80% 55%;
-        --chart-4: 280 65% 60%;
-        --chart-5: 340 75% 55%;
+        --destructive-foreground: 0 0% 100%;
+        --border: 0 0% 16%; /* subtle dark gray borders */
+        --input: 0 0% 12%; /* input field background */
+        --ring: 188 100% 42%; /* teal accent for focus rings */
+        /* Chart colors for syntax highlighting and data visualization */
+        --chart-1: 300 60% 65%; /* #C586C0 - purple for SQL keywords */
+        --chart-2: 200 70% 60%; /* #569CD6 - light blue for SQL functions */
+        --chart-3: 25 70% 65%; /* #CE9178 - orange for string literals */
+        --chart-4: 188 100% 42%; /* #00BCD4 - teal accent */
+        --chart-5: 0 0% 63%; /* #A0A0A0 - light gray */
     }
 }
 

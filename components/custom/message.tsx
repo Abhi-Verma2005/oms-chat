@@ -2,9 +2,11 @@
 
 import { Attachment, ToolInvocation } from "ai";
 import { motion } from "framer-motion";
-import { ReactNode, useEffect, useRef, useCallback } from "react";
+import { ThumbsUp, ThumbsDown, Copy, RotateCcw, ChevronDown } from "lucide-react";
+import { ReactNode, useEffect, useRef, useCallback, useMemo, useState } from "react";
 
 import { BotIcon, UserIcon } from "./icons";
+import Logo from "./logo";
 import { Markdown } from "./markdown";
 import { PreviewAttachment } from "./preview-attachment";
 import { Weather } from "./weather";
@@ -21,16 +23,47 @@ export const Message = ({
   content,
   toolInvocations,
   attachments,
+  onRegenerate,
+  isLastMessage = false,
+  isGenerating = false,
 }: {
   chatId: string;
   role: string;
   content: string | ReactNode;
   toolInvocations: Array<ToolInvocation> | undefined;
   attachments?: Array<Attachment>;
+  onRegenerate?: () => void;
+  isLastMessage?: boolean;
+  isGenerating?: boolean;
 }) => {
-  const { setRightPanelContent } = useSplitScreen();
+  const { setRightPanelContent, closeRightPanel } = useSplitScreen();
   const { addItem, removeItem, getCartItemIds, state: cartState, clearCart } = useCart();
   const processedToolCalls = useRef<Set<string>>(new Set());
+  const openedToolCalls = useRef<Set<string>>(new Set());
+  const [copied, setCopied] = useState(false);
+  const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
+
+  // Copy functionality
+  const handleCopy = useCallback(async () => {
+    if (typeof content === 'string') {
+      try {
+        await navigator.clipboard.writeText(content);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch (err) {
+        console.error('Failed to copy text: ', err);
+      }
+    }
+  }, [content]);
+
+  // Feedback handlers
+  const handleThumbsUp = useCallback(() => {
+    setFeedback(prev => prev === 'up' ? null : 'up');
+  }, []);
+
+  const handleThumbsDown = useCallback(() => {
+    setFeedback(prev => prev === 'down' ? null : 'down');
+  }, []);
 
   // Function to trigger AI acknowledgment of payment success
   const triggerPaymentSuccessMessage = useCallback(async (paymentIntent: any) => {
@@ -91,6 +124,8 @@ export const Message = ({
             clearCart();
             // Trigger AI acknowledgment of successful payment
             triggerPaymentSuccessMessage(paymentIntent);
+            // Auto-close sidebar after successful payment
+            setTimeout(() => closeRightPanel(), 1000);
           }}
           onPaymentError={(error) => {
             console.error('Payment error:', error);
@@ -100,10 +135,10 @@ export const Message = ({
     );
     
     setRightPanelContent(paymentComponent);
-  }, [cartState.items, setRightPanelContent, clearCart, triggerPaymentSuccessMessage]);
+  }, [cartState.items, setRightPanelContent, clearCart, triggerPaymentSuccessMessage, closeRightPanel]);
 
   // Function to get component and show in right panel
-  const showInRightPanel = useCallback((toolName: string, result: any) => {
+  const showInRightPanel = useCallback((toolName: string, result: any, key?: string) => {
     let component = null;
 
     switch (toolName) {
@@ -133,9 +168,13 @@ export const Message = ({
                   da: publisher.authority.da
                 }
               });
+              // Auto-close sidebar after adding to cart
+              setTimeout(() => closeRightPanel(), 500);
             }}
             onRemoveFromCart={(publisherId) => {
               removeItem(publisherId);
+              // Auto-close sidebar after removing from cart
+              setTimeout(() => closeRightPanel(), 500);
             }}
             cartItems={getCartItemIds()}
           />
@@ -168,8 +207,8 @@ export const Message = ({
       case "processPayment":
         component = (
           <div className="p-4 space-y-4">
-            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-              <p className="text-green-800 dark:text-green-200 text-sm font-medium">
+            <div className="bg-ui-teal/10 border border-ui-teal/30 rounded-lg p-4">
+              <p className="text-ui-teal text-sm font-medium">
                 {result.message}
               </p>
             </div>
@@ -178,6 +217,8 @@ export const Message = ({
               items={result.items}
               onPaymentSuccess={(paymentIntent) => {
                 console.log('Payment successful:', paymentIntent);
+                // Auto-close sidebar after successful payment
+                setTimeout(() => closeRightPanel(), 1000);
               }}
               onPaymentError={(error) => {
                 console.error('Payment error:', error);
@@ -198,65 +239,123 @@ export const Message = ({
     }
 
     if (component) {
-      setRightPanelContent(component);
+      // Wrap with a key to force remount when switching from loading -> result
+      const wrapped = <div key={key || `${toolName}-content`}>{component}</div>;
+      console.log('🚀 Opening sidebar with content for tool:', toolName);
+      setRightPanelContent(wrapped);
+    } else {
+      console.log('❌ No component created for tool:', toolName, 'result:', result);
     }
-  }, [setRightPanelContent, addItem, removeItem, getCartItemIds, handleDoneAddingToCart]);
+  }, [setRightPanelContent, addItem, removeItem, getCartItemIds, handleDoneAddingToCart, closeRightPanel]);
 
   // Auto-display completed tool results
+  const toolStateSignature = useMemo(() => {
+    if (!toolInvocations || toolInvocations.length === 0) return "";
+    return toolInvocations.map((i) => `${i.toolCallId}:${i.state}`).join("|");
+  }, [toolInvocations]);
+
   useEffect(() => {
-    if (toolInvocations) {
-      toolInvocations.forEach((toolInvocation) => {
-        const { toolName, toolCallId, state } = toolInvocation;
-        
-        if (state === "result" && !processedToolCalls.current.has(toolCallId)) {
-          const { result } = toolInvocation;
-          showInRightPanel(toolName, result);
-          processedToolCalls.current.add(toolCallId);
-        }
-      });
-    }
-  }, [toolInvocations, showInRightPanel]);
+    if (!toolInvocations || toolInvocations.length === 0) return;
+
+    toolInvocations.forEach((toolInvocation) => {
+      const { toolName, toolCallId, state } = toolInvocation;
+
+      // When a tool call starts, just track it but don't open the sidebar yet
+      if (state === "call" && !openedToolCalls.current.has(toolCallId)) {
+        openedToolCalls.current.add(toolCallId);
+      }
+
+      // When the tool returns a result, open the sidebar and show the content
+      if (state === "result" && !processedToolCalls.current.has(toolCallId)) {
+        console.log('🔧 Tool call completed:', { toolName, toolCallId, state, result: toolInvocation.result });
+        const { result } = toolInvocation as any;
+        showInRightPanel(toolName, result, `result-${toolCallId}`);
+        processedToolCalls.current.add(toolCallId);
+        openedToolCalls.current.delete(toolCallId);
+      }
+    });
+  }, [toolStateSignature, toolInvocations, showInRightPanel, setRightPanelContent]);
 
   return (
     <motion.div
-      className={`flex flex-row gap-4 px-4 w-full md:w-[500px] md:px-0 first-of-type:pt-20`}
+      className={`group flex flex-row gap-4 px-4 w-full md:w-[650px] md:px-0 first-of-type:pt-20`}
       initial={{ y: 5, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
     >
-      <div className="size-[24px] border rounded-sm p-1 flex flex-col justify-center items-center shrink-0 text-zinc-500">
-        {role === "assistant" ? <BotIcon /> : <UserIcon />}
+      <div className={`size-[24px] border border-border rounded-sm p-1 flex flex-col justify-center items-center shrink-0 text-muted-foreground relative ${
+        role === "assistant" && isGenerating ? 'animate-[stream-pulse_2s_ease-in-out_infinite]' : ''
+      }`}>
+        {role === "assistant" ? (
+          <Logo href="#" size={16} />
+        ) : (
+          <UserIcon />
+        )}
+        {role === "assistant" && isGenerating && (
+          <div className="absolute -top-1 -right-1 size-2 bg-primary rounded-full animate-pulse" />
+        )}
       </div>
 
       <div className="flex flex-col gap-2 w-full">
         {content && typeof content === "string" && (
-          <div className="text-foreground flex flex-col gap-4">
-            <Markdown>{content}</Markdown>
+          <div 
+            className={`text-foreground flex flex-col gap-4 relative ${
+              isGenerating ? 'animate-[stream-glow_2s_ease-in-out_infinite]' : ''
+            }`}
+          >
+            <div className={isGenerating ? 'streaming-content' : ''}>
+              <Markdown>{content}</Markdown>
+            </div>
+            
+            {/* Typing cursor - only show during streaming */}
+            {isGenerating && (
+              <span 
+                className="absolute bottom-0 right-0 inline-block w-0.5 h-5 bg-primary animate-[typing-cursor-optimized_1s_ease-in-out_infinite]"
+                aria-hidden="true"
+              />
+            )}
           </div>
         )}
 
         {toolInvocations && (
-          <div className="flex flex-col gap-2">
+          <div className="flex flex-col gap-3 mt-4">
             {toolInvocations.map((toolInvocation) => {
               const { toolName, toolCallId, state } = toolInvocation;
+              const displayName = toolName.replace(/([A-Z])/g, ' $1').trim()
+                .split(' ')
+                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+                .join(' ');
 
               if (state === "result") {
                 const { result } = toolInvocation;
 
                 return (
-                  <div key={toolCallId}>
-                    <button
-                      onClick={() => showInRightPanel(toolName, result)}
-                      className="px-3 py-2 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors text-sm font-medium"
-                    >
-                      View {toolName.replace(/([A-Z])/g, ' $1').trim()} →
-                    </button>
+                  <div 
+                    key={toolCallId} 
+                    onClick={() => showInRightPanel(toolName, result)}
+                    className="bg-card border border-border rounded-lg p-3 hover:bg-card/80 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-ui-teal/50 w-fit max-w-full"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <h3 className="text-foreground font-medium text-sm whitespace-nowrap">{displayName}</h3>
+                      <span className="text-muted-foreground text-xs">→</span>
+                    </div>
                   </div>
                 );
               } else {
                 return (
-                  <div key={toolCallId} className="skeleton">
-                    <div className="px-3 py-2 bg-secondary rounded-lg text-sm animate-pulse">
-                      Loading {toolName.replace(/([A-Z])/g, ' $1').trim()}...
+                  <div key={toolCallId} className="relative bg-card border border-border rounded-lg p-3 overflow-hidden w-fit max-w-full">
+                    {/* Animated border light */}
+                    <div className="absolute inset-0 rounded-lg">
+                      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-ui-teal/50 to-transparent opacity-0 animate-[border-light_2s_ease-in-out_infinite]"></div>
+                      <div className="absolute inset-px rounded-lg bg-card"></div>
+                    </div>
+                    
+                    <div className="relative flex items-center justify-between gap-3">
+                      <h3 className="text-foreground font-medium text-sm whitespace-nowrap">{displayName}</h3>
+                      <div className="flex items-center gap-2">
+                        <div className="size-2 bg-ui-teal rounded-full animate-pulse"></div>
+                        <div className="size-2 bg-ui-teal rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="size-2 bg-ui-teal rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                      </div>
                     </div>
                   </div>
                 );
@@ -270,6 +369,55 @@ export const Message = ({
             {attachments.map((attachment) => (
               <PreviewAttachment key={attachment.url} attachment={attachment} />
             ))}
+          </div>
+        )}
+
+        {/* Response Action Buttons - Only show for assistant messages when response is complete */}
+        {role === "assistant" && content && typeof content === "string" && !isGenerating && (
+          <div className={`flex items-center gap-1 mt-2 text-muted-foreground transition-opacity duration-200 ${
+            isLastMessage ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+          }`}>
+            <button
+              onClick={handleThumbsUp}
+              className={`p-1 rounded hover:bg-muted transition-colors ${
+                feedback === 'up' ? 'text-green-500' : ''
+              }`}
+              title="Thumbs up"
+            >
+              <ThumbsUp size={14} />
+            </button>
+            <button
+              onClick={handleThumbsDown}
+              className={`p-1 rounded hover:bg-muted transition-colors ${
+                feedback === 'down' ? 'text-red-500' : ''
+              }`}
+              title="Thumbs down"
+            >
+              <ThumbsDown size={14} />
+            </button>
+            <button
+              onClick={handleCopy}
+              className={`p-1 rounded hover:bg-muted transition-colors ${
+                copied ? 'text-green-500' : ''
+              }`}
+              title={copied ? "Copied!" : "Copy"}
+            >
+              <Copy size={14} />
+            </button>
+            {onRegenerate && (
+              <button
+                onClick={onRegenerate}
+                className="p-1 rounded hover:bg-muted transition-colors"
+                title="Regenerate response"
+              >
+                <RotateCcw size={14} />
+              </button>
+            )}
+            <div className="w-px h-4 bg-border mx-1" />
+            <div className="flex items-center gap-1 text-xs">
+              <span className="text-muted-foreground">Personalized with Memory</span>
+              <ChevronDown size={12} />
+            </div>
           </div>
         )}
       </div>

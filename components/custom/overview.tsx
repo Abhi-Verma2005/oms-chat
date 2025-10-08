@@ -7,7 +7,7 @@ export const Overview = () => {
   return (
     <motion.div
       key="overview"
-      className="max-w-[500px] mt-20 mx-4 md:mx-0"
+      className="max-w-[650px] mt-20 mx-4 md:mx-0"
       initial={{ opacity: 0, scale: 0.98 }}
       animate={{ opacity: 1, scale: 1 }}
       exit={{ opacity: 0, scale: 0.98 }}
@@ -20,8 +20,8 @@ export const Overview = () => {
           <MessageIcon />
         </p>
         <p>
-          This is an OMS Chat Assistant powered by the Google Gemini
-          model built with Next.js and the AI SDK by Vercel. It uses the{" "}
+          This is an OMS Chat Assistant powered by AI models
+          built with Next.js and the AI SDK by Vercel. It uses the{" "}
           <code className="rounded-sm bg-secondary px-1.5 py-0.5 text-secondary-foreground">
             streamText
           </code>{" "}

@@ -143,248 +143,108 @@ export default function CartManagementResults({
 
       {/* Cart Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3">
-          <div className="p-2 bg-violet-100 dark:bg-violet-900/30 rounded-lg">
-            <ShoppingCart className="h-6 w-6 text-violet-600 dark:text-violet-400" />
-          </div>
-          <div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-              Shopping Cart
-            </h3>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              {displayCartData.totalItems} items • Last updated {formatDate(displayCartData.lastUpdated)}
-            </p>
-          </div>
-        </div>
+        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+          Cart ({displayCartData.totalItems})
+        </h3>
         
         {displayCartData.items.length > 0 && (
-          <div className="flex items-center space-x-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={handleClearCart}
-              className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
-            >
-              <Trash2 className="h-4 w-4 mr-1" />
-              Clear Cart
-            </Button>
-          </div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleClearCart}
+            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
+          >
+            <Trash2 className="h-4 w-4" />
+          </Button>
         )}
       </div>
 
       {/* Cart Items */}
       {displayCartData.items.length === 0 ? (
-        <Card className="border-dashed border-2 border-gray-200 dark:border-gray-700">
-          <CardContent className="flex flex-col items-center justify-center py-12">
-            <ShoppingCart className="h-12 w-12 text-gray-400 dark:text-gray-500 mb-4" />
-            <h4 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-              Your cart is empty
-            </h4>
-            <p className="text-sm text-gray-500 dark:text-gray-400 text-center">
-              Add publishers or products to get started with your backlinking campaign
-            </p>
-          </CardContent>
-        </Card>
+        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+          <ShoppingCart className="h-8 w-8 mx-auto mb-2" />
+          <p>Your cart is empty</p>
+        </div>
       ) : (
-        <div className="space-y-3">
+        <div className="space-y-2">
           {displayCartData.items.map((item) => (
-            <Card key={item.id} className="hover:shadow-md transition-shadow">
-              <CardContent className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-3">
-                      <div className="flex-shrink-0">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                          item.type === 'publisher' 
-                            ? 'bg-blue-100 dark:bg-blue-900/30' 
-                            : 'bg-green-100 dark:bg-green-900/30'
-                        }`}>
-                          {item.type === 'publisher' ? (
-                            <span className="text-blue-600 dark:text-blue-400 font-semibold text-sm">
-                              P
-                            </span>
-                          ) : (
-                            <span className="text-green-600 dark:text-green-400 font-semibold text-sm">
-                              PR
-                            </span>
-                          )}
-                        </div>
-                      </div>
-                      
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center space-x-2">
-                          <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate">
-                            {item.name}
-                          </h4>
-                          <Badge variant="secondary" className="text-xs">
-                            {item.type}
-                          </Badge>
-                        </div>
-                        
-                        {item.metadata && (
-                          <div className="flex items-center space-x-2 mt-1">
-                            {item.metadata.website && (
-                              <span className="text-xs text-gray-500 dark:text-gray-400">
-                                {item.metadata.website}
-                              </span>
-                            )}
-                            {item.metadata.dr && (
-                              <Badge variant="outline" className="text-xs">
-                                DR {item.metadata.dr}
-                              </Badge>
-                            )}
-                            {item.metadata.niche && item.metadata.niche.length > 0 && (
-                              <Badge variant="outline" className="text-xs">
-                                {item.metadata.niche[0]}
-                              </Badge>
-                            )}
-                          </div>
-                        )}
-                        
-                        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                          Added {formatDate(item.addedAt)}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-4">
-                    {/* Quantity Controls */}
-                    <div className="flex items-center space-x-2">
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Minus className="h-3 w-3" />
-                      </Button>
-                      
-                      <span className="text-sm font-medium text-gray-900 dark:text-gray-100 min-w-[2rem] text-center">
-                        {item.quantity}
-                      </span>
-                      
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                        className="h-8 w-8 p-0"
-                      >
-                        <Plus className="h-3 w-3" />
-                      </Button>
-                    </div>
-
-                    {/* Price */}
-                    <div className="text-right">
-                      <div className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                        {formatPrice(item.price * item.quantity)}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {formatPrice(item.price)} each
-                      </div>
-                    </div>
-
-                    {/* Remove Button */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveItem(item.id)}
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20 h-8 w-8 p-0"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </div>
+            <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
+              <div className="flex items-center space-x-3 flex-1">
+                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
+                  <span className="text-blue-600 dark:text-blue-400 font-semibold text-xs">P</span>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate text-xs">
+                    {item.name}
+                  </h4>
+                  {item.metadata?.dr && (
+                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                      DR {item.metadata.dr}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3">
+                <div className="flex items-center space-x-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
+                    className="h-6 w-6 p-0"
+                  >
+                    <Minus className="h-3 w-3" />
+                  </Button>
+                  
+                  <span className="text-sm font-medium w-6 text-center">
+                    {item.quantity}
+                  </span>
+                  
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
+                    className="h-6 w-6 p-0"
+                  >
+                    <Plus className="h-3 w-3" />
+                  </Button>
+                </div>
+
+                <div className="font-semibold text-gray-900 dark:text-gray-100 text-xs">
+                  {formatPrice(item.price * item.quantity)}
+                </div>
+
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleRemoveItem(item.id)}
+                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20 h-6 w-6 p-0"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              </div>
+            </div>
           ))}
         </div>
       )}
 
-      {/* Cart Summary */}
+      {/* Checkout Section */}
       {displayCartData.items.length > 0 && (
-        <Card className="bg-gray-50 dark:bg-gray-800/50">
-          <CardContent className="p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h4 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Order Summary
-              </h4>
-            </div>
-            
-            <div className="space-y-2">
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Items ({displayCartData.totalItems})</span>
-                <span className="text-gray-900 dark:text-gray-100">
-                  {formatPrice(displayCartData.totalPrice)}
-                </span>
-              </div>
-              
-              <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Taxes</span>
-                <span className="text-gray-900 dark:text-gray-100">
-                  {formatPrice(displayCartData.totalPrice * 0.08)}
-                </span>
-              </div>
-              
-              <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
-                <div className="flex justify-between">
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">Total</span>
-                  <span className="font-semibold text-gray-900 dark:text-gray-100">
-                    {formatPrice(displayCartData.totalPrice * 1.08)}
-                  </span>
-                </div>
-              </div>
-            </div>
+        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm text-gray-600 dark:text-gray-400">Total</span>
+            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+              {formatPrice(displayCartData.totalPrice * 1.08)}
+            </span>
+          </div>
 
-            {/* Done Adding to Cart Button */}
-            <DoneAddingToCartButton
-              onDoneAdding={onDoneAddingToCart || (() => {})}
-              itemCount={displayCartData.totalItems}
-              totalAmount={displayCartData.totalPrice * 1.08}
-            />
-            
-            <p className="text-xs text-gray-500 dark:text-gray-400 text-center mt-2">
-              Secure payment powered by Stripe
-            </p>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Cart Statistics */}
-      {data.summary && (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {data.summary.totalItems}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                Unique Items
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {data.summary.totalQuantity}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                Total Quantity
-              </div>
-            </CardContent>
-          </Card>
-          
-          <Card>
-            <CardContent className="p-4 text-center">
-              <div className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                {formatPrice(data.summary.totalPrice)}
-              </div>
-              <div className="text-sm text-gray-500 dark:text-gray-400">
-                Total Value
-              </div>
-            </CardContent>
-          </Card>
+          <Button
+            onClick={onDoneAddingToCart || (() => {})}
+            className="w-full bg-violet-600 hover:bg-violet-700 text-white"
+          >
+            <CheckCircle className="h-4 w-4 mr-2" />
+            Proceed to Checkout
+          </Button>
         </div>
       )}
     </div>

@@ -77,11 +77,11 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
     datasets: [{
       data: Object.values(summary.statusBreakdown),
       backgroundColor: [
-        '#10b981', // green for PAID
-        '#f59e0b', // yellow for PENDING
-        '#ef4444', // red for FAILED
-        '#6b7280', // gray for CANCELLED
-        '#3b82f6', // blue for others
+        '#00BCD4', // teal for PAID (using accent color)
+        '#CE9178', // orange for PENDING (using string literal color)
+        '#ef4444', // red for FAILED (keeping red)
+        '#A0A0A0', // light gray for CANCELLED (using secondary text color)
+        '#569CD6', // light blue for others (using SQL function color)
       ],
       borderWidth: 0,
     }]
@@ -122,11 +122,11 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
         label: 'Revenue',
         data: values,
         backgroundColor: 'rgba(139, 92, 246, 0.1)',
-        borderColor: '#8b5cf6',
+        borderColor: '#00BCD4', // teal accent color
         borderWidth: 3,
         fill: true,
         tension: 0.4,
-        pointBackgroundColor: '#8b5cf6',
+        pointBackgroundColor: '#00BCD4', // teal accent color
         pointBorderColor: '#ffffff',
         pointBorderWidth: 2,
         pointRadius: 5,
@@ -163,8 +163,8 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
       datasets: [{
         label: 'Orders',
         data: counts,
-        backgroundColor: '#8b5cf6',
-        borderColor: '#7c3aed',
+        backgroundColor: '#00BCD4', // teal accent color
+        borderColor: '#00BCD4', // teal accent color
         borderWidth: 0,
       }]
     };
@@ -181,7 +181,7 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
                 <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
                 <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Orders</span>
               </div>
-              <span className="text-lg font-bold text-blue-800 dark:text-blue-200">{summary.totalOrders}</span>
+              <span className="text-sm font-bold text-blue-800 dark:text-blue-200">{summary.totalOrders}</span>
             </div>
           </CardContent>
         </Card>
@@ -193,7 +193,7 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
                 <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
                 <span className="text-sm font-medium text-green-600 dark:text-green-400">Total Value</span>
               </div>
-              <span className="text-lg font-bold text-green-800 dark:text-green-200">
+              <span className="text-sm font-bold text-green-800 dark:text-green-200">
                 {formatCurrency(summary.totalAmount)}
               </span>
             </div>
@@ -207,7 +207,7 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
                 <TrendingUp className="h-4 w-4 text-purple-600 dark:text-purple-400" />
                 <span className="text-sm font-medium text-purple-600 dark:text-purple-400">Recent</span>
               </div>
-              <span className="text-lg font-bold text-purple-800 dark:text-purple-200">{summary.recentOrders}</span>
+              <span className="text-sm font-bold text-purple-800 dark:text-purple-200">{summary.recentOrders}</span>
             </div>
             <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">Last 30 days</div>
           </CardContent>
@@ -237,7 +237,7 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
         {/* Order Status Distribution */}
         <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex items-center gap-2 text-sm">
               <PieChartIcon className="h-4 w-4" />
               Order Status Distribution
             </CardTitle>
@@ -252,7 +252,7 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
         {/* Monthly Order Count */}
         <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base">
+            <CardTitle className="flex items-center gap-2 text-sm">
               <BarChart3 className="h-4 w-4" />
               Monthly Order Count
             </CardTitle>
@@ -292,7 +292,7 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
           {orders.length === 0 ? (
             <div className="p-6 text-center">
               <Package className="mx-auto h-8 w-8 text-gray-400" />
-              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">No orders found</h3>
+              <h3 className="mt-2 text-xs font-medium text-gray-900 dark:text-gray-100">No orders found</h3>
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 You haven't placed any orders yet.
               </p>
@@ -304,14 +304,14 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <h4 className="font-medium text-sm text-gray-900 dark:text-gray-100">
+                        <h4 className="font-medium text-xs text-gray-900 dark:text-gray-100">
                           #{order.id.slice(-8)}
                         </h4>
                         <Badge className={`text-xs px-2 py-1 ${getStatusColor(order.status)}`}>
                           {order.status}
                         </Badge>
                       </div>
-                      <span className="font-semibold text-sm text-gray-900 dark:text-gray-100">
+                      <span className="font-semibold text-xs text-gray-900 dark:text-gray-100">
                         {formatCurrency(order.totalAmount, order.currency)}
                       </span>
                     </div>

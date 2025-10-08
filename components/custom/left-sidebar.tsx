@@ -6,6 +6,7 @@ import { useState } from "react";
 import { SlashIcon, Menu, X } from "lucide-react";
 
 import { History } from "./history";
+import Logo from "./logo";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "../ui/button";
 import {
@@ -42,13 +43,7 @@ export function LeftSidebar({ user, onCollapseChange }: LeftSidebarProps) {
           {!isCollapsed ? (
             <>
               <div className="flex items-center space-x-3">
-                <Image
-                  src="/images/gemini-logo.png"
-                  height={32}
-                  width={32}
-                  alt="gemini logo"
-                  className="rounded-lg"
-                />
+                <Logo href="/" size={32} />
                 <div className="text-muted-foreground">
                   <SlashIcon size={20} />
                 </div>
@@ -61,13 +56,7 @@ export function LeftSidebar({ user, onCollapseChange }: LeftSidebarProps) {
               </div>
             </>
           ) : (
-            <Image
-              src="/images/gemini-logo.png"
-              height={32}
-              width={32}
-              alt="gemini logo"
-              className="rounded-lg"
-            />
+            <Logo href="/" size={32} />
           )}
         </div>
 
@@ -94,7 +83,16 @@ export function LeftSidebar({ user, onCollapseChange }: LeftSidebarProps) {
             </div>
           )}
           <div className="flex-1 overflow-y-auto">
-            <History user={user} isCollapsed={isCollapsed} />
+            <History 
+              user={user} 
+              isCollapsed={isCollapsed} 
+              onItemClick={() => {
+                if (!isCollapsed) {
+                  setIsCollapsed(true);
+                  onCollapseChange?.(true);
+                }
+              }}
+            />
           </div>
         </div>
       </div>

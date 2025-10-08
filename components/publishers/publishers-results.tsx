@@ -85,33 +85,43 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
 
   const getSpamColor = (level: string) => {
     switch (level) {
-      case "Low": return "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300";
-      case "Medium": return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300";
-      case "High": return "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300";
-      default: return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300";
+      case "Low":
+        return "bg-status-success text-white";
+      case "Medium":
+        return "bg-status-pending text-white";
+      case "High":
+        return "bg-status-failed text-white";
+      default:
+        return "bg-muted text-foreground";
     }
   };
 
   const getTypeColor = (type: string) => {
-    return type === "Premium" 
-      ? "bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300"
-      : "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300";
+    return type === "Premium"
+      ? "bg-primary/15 text-primary"
+      : "bg-muted text-muted-foreground";
   };
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
-      case "Rising": return <TrendingUp className="h-4 w-4 text-green-500" />;
-      case "Falling": return <TrendingUp className="h-4 w-4 text-red-500 rotate-180" />;
-      default: return <div className="h-4 w-4 bg-gray-300 rounded-full" />;
+      case "Rising":
+        return <TrendingUp className="size-5 text-ui-teal" />;
+      case "Falling":
+        return <TrendingUp className="size-5 text-status-failed rotate-180" />;
+      default:
+        return <div className="size-5 bg-muted rounded-full" />;
     }
   };
 
   return (
-    <div className="w-full space-y-6 p-6">
+    <div 
+      className="w-full space-y-8 p-8 text-foreground"
+      onClick={(e) => e.stopPropagation()}
+    >
       {/* Error message */}
       {results.error && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3">
-          <p className="text-yellow-800 dark:text-yellow-300 text-sm">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
+          <p className="text-yellow-800 dark:text-yellow-300 text-sm font-medium">
             ⚠️ {results.error}
           </p>
         </div>
@@ -119,24 +129,24 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
 
       {/* Filters applied */}
       {results.filters && Object.values(results.filters).some(Boolean) && (
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-4">
           {results.filters.niche && (
-            <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-3 py-2 rounded-full text-xs font-medium">
+            <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-4 py-2 rounded-full text-xs font-semibold">
               Niche: {results.filters.niche}
             </span>
           )}
           {results.filters.country && (
-            <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-3 py-2 rounded-full text-xs font-medium">
+            <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-4 py-2 rounded-full text-xs font-semibold">
               Country: {results.filters.country}
             </span>
           )}
           {results.filters.type && (
-            <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 px-3 py-2 rounded-full text-xs font-medium">
+            <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 px-4 py-2 rounded-full text-xs font-semibold">
               Type: {results.filters.type}
             </span>
           )}
           {(results.filters.minDR || results.filters.maxDR) && (
-            <span className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-300 px-3 py-2 rounded-full text-xs font-medium">
+            <span className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-300 px-4 py-2 rounded-full text-xs font-semibold">
               DR: {results.filters.minDR || 0}-{results.filters.maxDR || 100}
             </span>
           )}
@@ -144,71 +154,74 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
       )}
 
       {/* Publishers Table */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+      <div 
+        className="bg-card rounded-xl shadow-lg border border-border overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-gray-50 dark:bg-gray-700/50">
+            <thead className="bg-muted/50">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-8 py-6 text-left text-xs font-bold text-foreground uppercase tracking-wide">
                   WEBSITE
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-8 py-6 text-left text-xs font-bold text-foreground uppercase tracking-wide">
                   NICHE
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-8 py-6 text-left text-xs font-bold text-foreground uppercase tracking-wide">
                   COUNTRY/LANG
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-8 py-6 text-left text-xs font-bold text-foreground uppercase tracking-wide">
                   AUTHORITY
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-8 py-6 text-left text-xs font-bold text-foreground uppercase tracking-wide">
                   SPAM
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-8 py-6 text-left text-xs font-bold text-foreground uppercase tracking-wide">
                   PRICE
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-8 py-6 text-left text-xs font-bold text-foreground uppercase tracking-wide">
                   TREND
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
+                <th className="px-8 py-6 text-left text-xs font-bold text-foreground uppercase tracking-wide">
                   CART
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-100 dark:divide-gray-700">
+            <tbody className="bg-card divide-y divide-border">
               {results.publishers.map((publisher) => (
-                <tr key={publisher.id} className="hover:bg-gray-50/50 dark:hover:bg-gray-700/30 transition-colors">
+                <tr key={publisher.id} className="hover:bg-muted/30 transition-all duration-200">
                   {/* Website Column */}
-                  <td className="px-6 py-5 whitespace-nowrap">
-                    <div className="flex items-center space-x-3">
+                  <td className="px-8 py-6 whitespace-nowrap">
+                    <div className="flex items-center space-x-4">
                       <div className="flex items-center space-x-1">
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
-                            className={`h-4 w-4 ${
+                            className={`size-5 ${
                               i < publisher.rating
                                 ? "text-yellow-400 fill-current"
-                                : "text-gray-300 dark:text-gray-600"
+                                : "text-muted-foreground/40"
                             }`}
                           />
                         ))}
                       </div>
-                      <div className="flex flex-col space-y-1">
-                        <div className="flex items-center space-x-2">
-                          <span className="text-sm font-medium text-gray-900 dark:text-white truncate max-w-[200px]">
+                      <div className="flex flex-col space-y-2">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-sm font-semibold text-foreground truncate max-w-[250px]">
                             {publisher.websiteName}
                           </span>
-                          <ExternalLink className="h-3 w-3 text-gray-400" />
+                          <ExternalLink className="size-4 text-muted-foreground" />
                         </div>
-                        <div className="flex space-x-2">
+                        <div className="flex space-x-3">
                           {publisher.doFollow && (
-                            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300">
-                              <ExternalLink className="h-3 w-3 mr-1" />
+                            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-ui-teal/20 text-ui-teal">
+                              <ExternalLink className="size-4 mr-1.5" />
                               Do-follow
                             </span>
                           )}
-                          <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
-                            <ExternalLink className="h-3 w-3 mr-1" />
+                          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
+                            <ExternalLink className="size-4 mr-1.5" />
                             Outbound {publisher.outboundLinks}
                           </span>
                         </div>
@@ -217,59 +230,59 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
                   </td>
 
                   {/* Niche Column */}
-                  <td className="px-6 py-5 whitespace-nowrap">
-                    <div className="space-y-2">
-                      <div className="flex flex-wrap gap-1">
+                  <td className="px-8 py-6 whitespace-nowrap">
+                    <div className="space-y-3">
+                      <div className="flex flex-wrap gap-2">
                         {publisher.niche.map((n, index) => (
                           <span
                             key={index}
-                            className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                            className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
                           >
                             {n}
                           </span>
                         ))}
                       </div>
-                      <div className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(publisher.type)}`}>
+                      <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${getTypeColor(publisher.type)}`}>
                         Type: {publisher.type}
                       </div>
                     </div>
                   </td>
 
                   {/* Country/Lang Column */}
-                  <td className="px-6 py-5 whitespace-nowrap">
-                    <div className="space-y-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-sm text-gray-900 dark:text-white">
+                  <td className="px-8 py-6 whitespace-nowrap">
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-sm font-semibold text-foreground">
                           {publisher.language}
                         </span>
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div className="text-xs text-muted-foreground font-medium">
                         Country: {publisher.country}
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div className="text-xs text-muted-foreground font-medium">
                         Language: {publisher.language}
                       </div>
                     </div>
                   </td>
 
                   {/* Authority Column */}
-                  <td className="px-6 py-5 whitespace-nowrap">
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">DR</span>
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
+                  <td className="px-8 py-6 whitespace-nowrap">
+                    <div className="space-y-3">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-xs font-semibold text-muted-foreground">DR</span>
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-authority-dr text-white">
                           {publisher.authority.dr}
                         </span>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">DA</span>
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-xs font-semibold text-muted-foreground">DA</span>
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-authority-da text-white">
                           {publisher.authority.da}
                         </span>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span className="text-xs text-gray-500 dark:text-gray-400">AS</span>
-                        <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300">
+                      <div className="flex items-center space-x-3">
+                        <span className="text-xs font-semibold text-muted-foreground">AS</span>
+                        <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-authority-as text-white">
                           {publisher.authority.as}
                         </span>
                       </div>
@@ -277,60 +290,70 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
                   </td>
 
                   {/* Spam Column */}
-                  <td className="px-6 py-5 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-2 py-1 rounded-full text-xs font-medium ${getSpamColor(publisher.spam.level)}`}>
+                  <td className="px-8 py-6 whitespace-nowrap">
+                    <span className={`inline-flex items-center px-4 py-2 rounded-full text-xs font-bold ${getSpamColor(publisher.spam.level)}`}>
                       {publisher.spam.percentage}% {publisher.spam.level}
                     </span>
                   </td>
 
                   {/* Price Column */}
-                  <td className="px-6 py-5 whitespace-nowrap">
-                    <div className="space-y-1">
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                  <td className="px-8 py-6 whitespace-nowrap">
+                    <div className="space-y-2">
+                      <div className="text-sm font-bold text-foreground">
                         ${publisher.pricing.base}
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div className="text-xs text-muted-foreground font-medium">
                         Base: ${publisher.pricing.base}
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div className="text-xs text-muted-foreground font-medium">
                         With Content: ${publisher.pricing.withContent}
                       </div>
                     </div>
                   </td>
 
                   {/* Trend Column */}
-                  <td className="px-6 py-5 whitespace-nowrap">
-                    <div className="flex items-center space-x-2">
+                  <td className="px-8 py-6 whitespace-nowrap">
+                    <div className="flex items-center space-x-3">
                       {getTrendIcon(publisher.trend)}
-                      <span className="text-sm text-gray-900 dark:text-white">
+                      <span className="text-sm font-semibold text-foreground">
                         {publisher.trend}
                       </span>
                     </div>
                   </td>
 
                   {/* Cart Column */}
-                  <td className="px-6 py-5 whitespace-nowrap">
-                    <div className="flex items-center space-x-2">
+                  <td className="px-8 py-6 whitespace-nowrap">
+                    <div className="flex items-center space-x-3">
                       <Button
-                        size="sm"
+                        size="default"
                         variant={cartItems?.has(publisher.id) ? "default" : "outline"}
-                        onClick={() => toggleCart(publisher)}
-                        className="text-xs"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleCart(publisher);
+                        }}
+                        className={`text-xs font-semibold px-4 py-2 ${
+                          cartItems?.has(publisher.id) 
+                            ? "bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700" 
+                            : "bg-purple-600 hover:bg-purple-700 text-white border-purple-600 hover:border-purple-700"
+                        }`}
                       >
-                        <ShoppingCart className="h-3 w-3 mr-1" />
+                        <ShoppingCart className="size-4 mr-2" />
                         {cartItems?.has(publisher.id) ? "In Cart" : "Add to Cart"}
                       </Button>
                       <Button
-                        size="sm"
+                        size="default"
                         variant="ghost"
-                        onClick={() => toggleWishlist(publisher.id)}
-                        className="p-1"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          toggleWishlist(publisher.id);
+                        }}
+                        className="p-2"
                       >
                         <Heart
-                          className={`h-4 w-4 ${
+                          className={`size-5 ${
                             wishlist.has(publisher.id)
-                              ? "text-red-500 fill-current"
-                              : "text-gray-400"
+                              ? "text-status-failed fill-current"
+                              : "text-muted-foreground"
                           }`}
                         />
                       </Button>
@@ -344,20 +367,20 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
       </div>
 
       {/* Summary Stats */}
-      <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600">
-        <div className="flex items-center justify-between text-sm">
-          <div className="flex items-center space-x-4">
-            <span className="text-gray-600 dark:text-gray-300">
-              <span className="font-semibold text-gray-900 dark:text-gray-100">{results.metadata.totalCount}</span> publishers
+      <div className="bg-muted/50 rounded-xl p-6 border border-border">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-8">
+            <span className="text-muted-foreground text-sm">
+              <span className="font-bold text-foreground text-sm">{results.metadata.totalCount}</span> publishers
             </span>
-            <span className="text-gray-600 dark:text-gray-300">
-              Avg DR: <span className="font-semibold">{results.metadata.averageDR}</span>
+            <span className="text-muted-foreground text-sm">
+              Avg DR: <span className="font-bold text-foreground">{results.metadata.averageDR}</span>
             </span>
-            <span className="text-gray-600 dark:text-gray-300">
-              Avg DA: <span className="font-semibold">{results.metadata.averageDA}</span>
+            <span className="text-muted-foreground text-sm">
+              Avg DA: <span className="font-bold text-foreground">{results.metadata.averageDA}</span>
             </span>
-            <span className="text-gray-600 dark:text-gray-300">
-              Price: <span className="font-semibold">${results.metadata.priceRange.min}-${results.metadata.priceRange.max}</span>
+            <span className="text-muted-foreground text-sm">
+              Price: <span className="font-bold text-foreground">${results.metadata.priceRange.min}-${results.metadata.priceRange.max}</span>
             </span>
           </div>
         </div>

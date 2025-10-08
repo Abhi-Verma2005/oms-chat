@@ -28,16 +28,16 @@ export const MermaidChart = ({ code }: MermaidChartProps) => {
           startOnLoad: false,
           theme: "dark",
           themeVariables: {
-            primaryColor: "#7C3AED", // Purple to match oms-chat theme
-            primaryTextColor: "#E5E7EB",
-            primaryBorderColor: "#7C3AED",
-            lineColor: "#9CA3AF",
-            secondaryColor: "#1A1A2E",
-            tertiaryColor: "#2C2C4A",
-            background: "#1A1A2E",
-            mainBkg: "#1A1A2E",
-            secondBkg: "#2C2C4A",
-            tertiaryBkg: "#2C2C4A",
+            primaryColor: "#00BCD4", // Teal accent from screenshot
+            primaryTextColor: "#FFFFFF", // White text
+            primaryBorderColor: "#00BCD4", // Teal border
+            lineColor: "#A0A0A0", // Light gray from screenshot
+            secondaryColor: "#1E1E1E", // Main background
+            tertiaryColor: "#2D2D2D", // Card background
+            background: "#1E1E1E", // Main background
+            mainBkg: "#1E1E1E", // Main background
+            secondBkg: "#2D2D2D", // Card background
+            tertiaryBkg: "#2D2D2D", // Card background
           },
           flowchart: {
             nodeSpacing: 50,
@@ -145,3 +145,5 @@ export const MermaidChart = ({ code }: MermaidChartProps) => {
     </div>
   );
 };
+
+

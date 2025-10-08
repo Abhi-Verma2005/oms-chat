@@ -4,6 +4,7 @@ import Link from "next/link";
 
 import { History } from "./history";
 import { SlashIcon } from "./icons";
+import Logo from "./logo";
 import { ThemeToggle } from "./theme-toggle";
 import { Button } from "../ui/button";
 import {
@@ -24,12 +25,7 @@ export const Navbar = async () => {
         <div className="flex flex-row gap-3 items-center">
           <History user={session?.user} />
           <div className="flex flex-row gap-2 items-center">
-            <Image
-              src="/images/gemini-logo.png"
-              height={20}
-              width={20}
-              alt="gemini logo"
-            />
+            <Logo href="/" size={20} />
             <div className="text-muted-foreground">
               <SlashIcon size={16} />
             </div>

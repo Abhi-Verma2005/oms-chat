@@ -21,12 +21,12 @@ export function RightPanel() {
         >
           {/* Header */}
           <div className="flex items-center justify-between p-3 shrink-0 bg-card">
-            <h2 className="text-sm font-medium text-gray-600 dark:text-gray-300">
+            <h2 className="text-sm font-medium text-muted-foreground">
               Publishers Results
             </h2>
             <button
               onClick={closeRightPanel}
-              className="p-2 bg-purple-500 hover:bg-purple-600 text-white rounded-full transition-all duration-200 hover:scale-110 shadow-lg hover:shadow-purple-500/25"
+              className="p-2 bg-ui-teal hover:bg-ui-teal/90 text-white rounded-full transition-all duration-200 hover:scale-110 shadow-lg hover:shadow-ui-teal/25"
             >
               <X className="size-4" />
             </button>

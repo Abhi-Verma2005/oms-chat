@@ -21,6 +21,16 @@ import { Textarea } from "../ui/textarea";
 
 const suggestedActions = [
   {
+    title: "Browse Publishers",
+    label: "Find high-quality backlink opportunities",
+    action: "Browse publishers for backlink opportunities",
+  },
+  {
+    title: "View My Orders",
+    label: "Check order status and history",
+    action: "Show me my orders",
+  },
+  {
     title: "Help me book a flight",
     label: "from San Francisco to London",
     action: "Help me book a flight from San Francisco to London",
@@ -156,7 +166,7 @@ export function MultimodalInput({
       {messages.length === 0 &&
         attachments.length === 0 &&
         uploadQueue.length === 0 && (
-          <div className="grid sm:grid-cols-2 gap-4 w-full md:px-0 mx-auto md:max-w-[500px]">
+          <div className="grid sm:grid-cols-2 gap-6 w-full md:px-0 mx-auto md:max-w-[750px]">
             {suggestedActions.map((suggestedAction, index) => (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -173,10 +183,12 @@ export function MultimodalInput({
                       content: suggestedAction.action,
                     });
                   }}
-                  className="border border-border bg-card w-full text-left text-foreground rounded-lg p-3 text-sm hover:bg-secondary transition-colors flex flex-col"
+                  className="border border-border bg-card w-full text-left text-foreground rounded-xl p-6 text-base hover:bg-secondary/50 transition-all duration-200 flex flex-col shadow-sm hover:shadow-md group"
                 >
-                  <span className="font-medium">{suggestedAction.title}</span>
-                  <span className="text-muted-foreground">
+                  <span className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors">
+                    {suggestedAction.title}
+                  </span>
+                  <span className="text-muted-foreground text-sm leading-relaxed">
                     {suggestedAction.label}
                   </span>
                 </button>
@@ -219,7 +231,7 @@ export function MultimodalInput({
         placeholder="Send a message..."
         value={input}
         onChange={handleInput}
-        className="min-h-[24px] overflow-hidden resize-none rounded-lg text-base bg-card border border-border"
+        className="min-h-[24px] overflow-hidden resize-none rounded-xl text-base bg-card border border-border shadow-sm focus:shadow-md transition-shadow"
         rows={3}
         onKeyDown={(event) => {
           if (event.key === "Enter" && !event.shiftKey) {

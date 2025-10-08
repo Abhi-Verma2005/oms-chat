@@ -53,7 +53,7 @@ export default function PieChart({
         elements: {
           arc: {
             borderWidth: 2,
-            borderColor: darkMode ? '#1f2937' : '#ffffff',
+            borderColor: darkMode ? '#1E1E1E' : '#ffffff',
           }
         },
         plugins: {

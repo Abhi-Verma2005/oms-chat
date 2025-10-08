@@ -59,6 +59,32 @@ const config: Config = {
           "4": "hsl(var(--chart-4))",
           "5": "hsl(var(--chart-5))",
         },
+        // Additional colors from the screenshot theme
+        syntax: {
+          keyword: "#C586C0", // purple for SQL keywords
+          function: "#569CD6", // light blue for SQL functions
+          string: "#CE9178", // orange for string literals
+          identifier: "#FFFFFF", // white for identifiers
+          comment: "#6A9955", // green for comments
+        },
+        ui: {
+          teal: "#00BCD4", // teal accent color
+          "light-gray": "#A0A0A0", // light gray for secondary text
+          "dark-gray": "#141414", // deep dark gray main background
+          "card-gray": "#1F1F1F", // dark gray card background
+        },
+        // Additional colors from the table screenshot
+        status: {
+          success: "#28A745", // green for completed status
+          processing: "#E97451", // orange for processing
+          pending: "#FFC107", // yellow for pending
+          failed: "#EF4444", // red for failed
+        },
+        authority: {
+          dr: "#E97451", // orange for Domain Rating
+          da: "#6B7280", // gray for Domain Authority
+          as: "#4B5563", // darker gray for Authority Score
+        },
       },
     },
   },

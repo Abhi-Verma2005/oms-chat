@@ -23,6 +23,7 @@ export function SplitScreenProvider({ children }: { children: ReactNode }) {
   const [leftPanelWidth, setLeftPanelWidth] = useState(0); // Will be calculated dynamically
 
   const handleSetRightPanelContent = (newContent: ReactNode) => {
+    console.log('📱 SplitScreenProvider: Setting right panel content and opening panel');
     setRightPanelContent(newContent);
     setIsRightPanelOpen(true);
   };

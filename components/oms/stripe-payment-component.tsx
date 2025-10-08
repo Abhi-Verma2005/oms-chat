@@ -101,9 +101,9 @@ export default function StripePaymentComponent({
           appearance: {
             theme: (isDark ? 'night' : 'flat') as any,
             variables: {
-              colorPrimary: '#7C3AED', // Violet color to match Mosaic theme
-              colorText: isDark ? '#E5E7EB' : '#111827',
-              colorBackground: isDark ? '#111827' : '#FFFFFF',
+              colorPrimary: '#00BCD4', // Teal accent color from screenshot
+              colorText: isDark ? '#FFFFFF' : '#1E1E1E',
+              colorBackground: isDark ? '#1E1E1E' : '#FFFFFF',
               colorDanger: '#EF4444',
               fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system',
               borderRadius: '8px',
@@ -111,22 +111,22 @@ export default function StripePaymentComponent({
             rules: {
               '.Input, .Input:focus': {
                 border: '1px solid',
-                borderColor: isDark ? '#374151' : '#E5E7EB',
-                backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
-                color: isDark ? '#E5E7EB' : '#111827',
+                borderColor: isDark ? '#404040' : '#E5E7EB',
+                backgroundColor: isDark ? '#2D2D2D' : '#FFFFFF',
+                color: isDark ? '#FFFFFF' : '#1E1E1E',
               },
               '.Label': {
-                color: isDark ? '#9CA3AF' : '#6B7280',
+                color: isDark ? '#A0A0A0' : '#737373',
               },
               '.Tab, .Pill': {
-                backgroundColor: isDark ? '#0F172A' : '#FFFFFF',
+                backgroundColor: isDark ? '#2D2D2D' : '#FFFFFF',
                 border: '1px solid',
-                borderColor: isDark ? '#374151' : '#E5E7EB',
+                borderColor: isDark ? '#404040' : '#E5E7EB',
               },
               '.Tab--selected, .Pill--selected': {
-                backgroundColor: isDark ? '#111827' : '#F3F4F6',
-                borderColor: '#7C3AED',
-                color: isDark ? '#DDD6FE' : '#6B46C1',
+                backgroundColor: isDark ? '#1E1E1E' : '#F3F4F6',
+                borderColor: '#00BCD4',
+                color: isDark ? '#FFFFFF' : '#1E1E1E',
               },
               '.Error': {
                 color: '#EF4444',
@@ -177,7 +177,7 @@ export default function StripePaymentComponent({
           <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Order Summary</h4>
           <div className="space-y-2">
             {items.map((item) => (
-              <div key={item.id} className="flex justify-between text-sm">
+              <div key={item.id} className="flex justify-between text-xs">
                 <span className="text-gray-600 dark:text-gray-400">
                   {item.name} × {item.quantity}
                 </span>
@@ -200,7 +200,7 @@ export default function StripePaymentComponent({
         {/* Payment Form */}
         {!clientSecret ? (
           <div className="text-center py-8">
-            <div className="text-sm text-gray-600 dark:text-gray-400">
+            <div className="text-xs text-gray-600 dark:text-gray-400">
               {loading ? 'Creating payment session…' : 'Preparing payment…'}
             </div>
             {error && (
@@ -288,7 +288,7 @@ function PaymentForm({
           <CheckCircle className="h-6 w-6" />
           <span className="font-medium">{success}</span>
         </div>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+        <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">
           Your order has been placed successfully.
         </p>
         <div className="flex space-x-2 justify-center">
@@ -316,7 +316,7 @@ function PaymentForm({
       </div>
       
       {error && (
-        <div className="flex items-center space-x-2 text-red-600 dark:text-red-400 text-sm">
+        <div className="flex items-center space-x-2 text-red-600 dark:text-red-400 text-xs">
           <AlertCircle className="h-4 w-4" />
           <span>{error}</span>
         </div>

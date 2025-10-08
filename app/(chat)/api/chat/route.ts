@@ -67,9 +67,18 @@ export async function POST(request: Request) {
       lastActive: string;
     };
   } | null) => {
-    const basePrompt = `\n
+    const basePrompt = `
         - you help users with backlinking and publisher discovery for SEO and content marketing!
         - keep your responses concise and helpful.
+        - format responses using clean, readable markdown like ChatGPT:
+          - start with a one-sentence answer/conclusion when possible
+          - use '###' section headings for structure (never '#')
+          - use short bullet lists; bold key terms like **DR**, **DA**, **Price**
+          - when helpful, include compact markdown tables with clear headers and short labels
+          - keep tables narrow (few columns), avoid wrapping long text; add a one-line caption before the table if needed
+          - use fenced code blocks with language tags for code/commands
+          - end with a brief Next steps section when appropriate
+          - use emojis strategically to enhance readability and engagement: ✅ for success/completion, 📌 for important points, 💡 for tips/insights, 📊 for data/metrics, 🧭 for guidance/next steps, 🎯 for goals/targets, 🔍 for search/analysis, ⚡ for quick actions, 🚀 for getting started, 💰 for pricing, 🌟 for recommendations, 📝 for notes, ⚠️ for warnings, 🎉 for celebrations
         - after every tool call, show the results to the user in a clear format.
         - today's date is ${new Date().toLocaleDateString()}.
         - ask follow up questions to help users find the right publishers for their needs.

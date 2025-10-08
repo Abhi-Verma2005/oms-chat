@@ -38,7 +38,15 @@ import {
 
 
 
-export const History = ({ user, isCollapsed = false }: { user: User | undefined; isCollapsed?: boolean }) => {
+export const History = ({ 
+  user, 
+  isCollapsed = false, 
+  onItemClick 
+}: { 
+  user: User | undefined; 
+  isCollapsed?: boolean;
+  onItemClick?: () => void;
+}) => {
   const { id } = useParams();
   const pathname = usePathname();
 
@@ -96,7 +104,7 @@ export const History = ({ user, isCollapsed = false }: { user: User | undefined;
             className="w-full font-normal text-sm flex flex-row justify-between text-white"
             asChild
           >
-            <Link href="/">
+            <Link href="/" onClick={onItemClick}>
               <div>Start a new chat</div>
               <PencilEditIcon size={14} />
             </Link>
@@ -149,6 +157,7 @@ export const History = ({ user, isCollapsed = false }: { user: User | undefined;
                   <Link
                     href={`/chat/${chat.id}`}
                     className="text-ellipsis overflow-hidden text-left py-1 pl-2 rounded-lg outline-zinc-900"
+                    onClick={onItemClick}
                   >
                     {getTitleFromChat(chat)}
                   </Link>
@@ -171,6 +180,7 @@ export const History = ({ user, isCollapsed = false }: { user: User | undefined;
                         onClick={() => {
                           setDeleteId(chat.id);
                           setShowDeleteDialog(true);
+                          onItemClick?.();
                         }}
                       >
                         <TrashIcon />

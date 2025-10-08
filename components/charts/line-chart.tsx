@@ -1,16 +1,15 @@
 'use client'
 
-import { useRef, useState, useEffect } from 'react'
-import { useTheme } from 'next-themes'
-
-import { chartColors, chartAreaGradient } from '@/components/charts/chartjs-config'
 import {
   Chart, LineController, LineElement, Filler, PointElement, LinearScale, CategoryScale, Tooltip,
 } from 'chart.js'
-import type { ChartData } from 'chart.js'
+import { useTheme } from 'next-themes'
+import { useRef, useState, useEffect } from 'react'
 
-// Import utilities
+import { chartColors, chartAreaGradient } from '@/components/charts/chartjs-config'
 import { adjustColorOpacity, getCssVariable, formatValue } from '@/lib/utils'
+
+import type { ChartData } from 'chart.js'
 
 Chart.register(LineController, LineElement, Filler, PointElement, LinearScale, CategoryScale, Tooltip)
 

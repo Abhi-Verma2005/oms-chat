@@ -1,6 +1,7 @@
+import { auth } from "@/app/(auth)/auth";
+
 import { Chat } from "../../components/custom/chat";
 import { generateUUID } from "../../lib/utils";
-import { auth } from "@/app/(auth)/auth";
 
 export default async function Page() {
   const id = generateUUID();

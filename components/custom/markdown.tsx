@@ -1,11 +1,12 @@
+import hljs from 'highlight.js';
 import Link from "next/link";
 import React, { memo, useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import hljs from 'highlight.js';
-import { MermaidChart } from './mermaid-chart';
 // Import highlight.js theme
 import 'highlight.js/styles/github-dark.css';
+
+import { MermaidChart } from './mermaid-chart';
 
 const NonMemoizedMarkdown = ({ children }: { children: string }) => {
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
@@ -53,9 +54,9 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
                 {language.toUpperCase()}
               </span>
               <div className="flex space-x-1">
-                <div className="w-2 h-2 rounded-full bg-destructive" />
-                <div className="w-2 h-2 rounded-full bg-yellow-400" />
-                <div className="w-2 h-2 rounded-full bg-green-500" />
+                <div className="size-2 rounded-full bg-destructive" />
+                <div className="size-2 rounded-full bg-yellow-400" />
+                <div className="size-2 rounded-full bg-green-500" />
               </div>
             </div>
             {/* Code block */}
@@ -77,11 +78,11 @@ const NonMemoizedMarkdown = ({ children }: { children: string }) => {
               title="Copy code"
             >
               {copiedCode === codeId ? (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
               ) : (
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
                 </svg>
               )}

@@ -1,17 +1,16 @@
 'use client'
 
-import { useRef, useState, useEffect } from 'react'
-import { useTheme } from 'next-themes'
-
-import { chartColors } from '@/components/charts/chartjs-config'
 import {
   Chart, PieController, ArcElement, TimeScale, Tooltip,
 } from 'chart.js'
-import type { ChartData } from 'chart.js'
 import 'chartjs-adapter-moment'
+import { useTheme } from 'next-themes'
+import { useRef, useState, useEffect } from 'react'
 
-// Import utilities
+import { chartColors } from '@/components/charts/chartjs-config'
 import { getCssVariable } from '@/lib/utils'
+
+import type { ChartData } from 'chart.js'
 
 Chart.register(PieController, ArcElement, TimeScale, Tooltip)
 
@@ -69,8 +68,8 @@ export default function PieChart({
               label: function(context) {
                 const label = context.label || '';
                 const value = context.parsed;
-                const total = context.dataset.data.reduce((a, b) => a + b, 0);
-                const percentage = ((value / total) * 100).toFixed(1);
+                const total = context.dataset.data.reduce((a, b) => (a as number) + (b as number), 0);
+                const percentage = (((value as number) / (total as number)) * 100).toFixed(1);
                 return `${label}: ${value} (${percentage}%)`;
               }
             }

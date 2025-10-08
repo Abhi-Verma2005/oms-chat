@@ -1,14 +1,16 @@
-import React from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { OrderData, OrdersDisplayResult } from "@/ai/actions/orders-display";
 import { CalendarDays, DollarSign, Package, TrendingUp, BarChart3, PieChart as PieChartIcon } from "lucide-react";
-import PieChart from "@/components/charts/pie-chart";
+import React, { useMemo } from "react";
+
+
+import { OrderData, OrdersDisplayResult } from "@/ai/actions/orders-display";
 import BarChart from "@/components/charts/bar-chart";
 import LineChart from "@/components/charts/line-chart";
-import type { ChartData } from 'chart.js';
+import PieChart from "@/components/charts/pie-chart";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 
+import type { ChartData } from 'chart.js';
 interface OrdersDisplayResultsProps {
   data: OrdersDisplayResult;
   success: boolean;
@@ -49,30 +51,11 @@ const formatDate = (dateString: string) => {
 };
 
 export function OrdersDisplayResults({ data, success, error, message }: OrdersDisplayResultsProps) {
-  if (!success) {
-    return (
-      <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950 w-full">
-        <CardContent className="p-4">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
-              <Package className="h-4 w-4 text-red-600 dark:text-red-400" />
-            </div>
-            <div>
-              <h3 className="font-semibold text-sm text-red-800 dark:text-red-200">Error Loading Orders</h3>
-              <p className="text-xs text-red-600 dark:text-red-300">
-                {error || "Failed to load your orders. Please try again."}
-              </p>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const { orders, summary } = data;
+  // Always destructure data to avoid conditional hook calls
+  const { orders, summary } = data || { orders: [], summary: { totalOrders: 0, totalRevenue: 0, statusBreakdown: {} } };
 
   // Prepare chart data based on actual order data
-  const statusChartData: ChartData<'pie'> = React.useMemo(() => ({
+  const statusChartData: ChartData<'pie'> = useMemo(() => ({
     labels: Object.keys(summary.statusBreakdown),
     datasets: [{
       data: Object.values(summary.statusBreakdown),
@@ -88,7 +71,7 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
   }), [summary.statusBreakdown]);
 
   // Process actual order data for monthly trends
-  const monthlyData = React.useMemo(() => {
+  const monthlyData = useMemo(() => {
     // Group orders by month
     const monthlyRevenue: Record<string, number> = {};
     const monthlyCounts: Record<string, number> = {};
@@ -136,7 +119,7 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
   }, [orders]);
 
   // Prepare order count by month using actual data
-  const orderCountData: ChartData<'bar'> = React.useMemo(() => {
+  const orderCountData: ChartData<'bar'> = useMemo(() => {
     const monthlyCounts: Record<string, number> = {};
     
     orders.forEach(order => {
@@ -169,6 +152,27 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
       }]
     };
   }, [orders]);
+
+  // Early return after all hooks
+  if (!success) {
+    return (
+      <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950 w-full">
+        <CardContent className="p-4">
+          <div className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
+              <Package className="h-4 w-4 text-red-600 dark:text-red-400" />
+            </div>
+            <div>
+              <h3 className="font-semibold text-sm text-red-800 dark:text-red-200">Error Loading Orders</h3>
+              <p className="text-xs text-red-600 dark:text-red-300">
+                {error || "Failed to load your orders. Please try again."}
+              </p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   return (
     <div className="space-y-4 w-full p-4">
@@ -294,7 +298,7 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
               <Package className="mx-auto h-8 w-8 text-gray-400" />
               <h3 className="mt-2 text-xs font-medium text-gray-900 dark:text-gray-100">No orders found</h3>
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                You haven't placed any orders yet.
+                You haven&apos;t placed any orders yet.
               </p>
             </div>
           ) : (

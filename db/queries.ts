@@ -44,8 +44,8 @@ export async function createUser(email: string, password: string) {
       id: userId,
       email,
       password: hash,
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     });
   } catch (error) {
     console.error("Failed to create user in external database");

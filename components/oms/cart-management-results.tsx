@@ -1,10 +1,12 @@
 "use client"
 
-import React from 'react'
 import { ShoppingCart, Plus, Minus, Trash2, CheckCircle, CreditCard } from 'lucide-react'
+import React from 'react'
+
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
+
 import DoneAddingToCartButton from './done-adding-to-cart-button'
 import { useCart } from '../../contexts/cart-context'
 

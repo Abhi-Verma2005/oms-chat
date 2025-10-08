@@ -1,11 +1,12 @@
-"use server";
-
-import { z } from "zod";
 import { generateObject } from "ai";
 import { eq, desc, and } from "drizzle-orm";
-import { openaiFlashModel } from "../index";
-import { external_db } from "@/lib/external-db";
+import { z } from "zod";
+
 import { orders } from "@/lib/drizzle-external/schema";
+import { external_db } from "@/lib/external-db";
+
+import { openaiFlashModel } from "../index";
+
 
 // Define input schema for the orders display tool
 const ordersDisplaySchema = z.object({
@@ -51,16 +52,14 @@ export async function displayOrdersFunction(params: z.infer<typeof ordersDisplay
     }
 
     // Fetch orders from external database
-    let query = external_db
+    const baseQuery = external_db
       .select()
-      .from(orders)
-      .orderBy(desc(orders.createdAt))
-      .limit(limit);
+      .from(orders);
 
-    // Apply conditions if any
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
+    // Apply conditions and build final query
+    const query = conditions.length > 0 
+      ? baseQuery.where(and(...conditions)).orderBy(desc(orders.createdAt)).limit(limit)
+      : baseQuery.orderBy(desc(orders.createdAt)).limit(limit);
 
     const fetchedOrders = await query;
 

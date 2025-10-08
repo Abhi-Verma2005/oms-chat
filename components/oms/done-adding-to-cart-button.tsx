@@ -1,8 +1,9 @@
 "use client"
 
-import React, { useState } from 'react'
-import { Button } from '@/components/ui/button'
 import { CheckCircle, ShoppingCart, Loader2 } from 'lucide-react'
+import React, { useState } from 'react'
+
+import { Button } from '@/components/ui/button'
 
 interface DoneAddingToCartButtonProps {
   onDoneAdding: () => void
@@ -68,7 +69,7 @@ export default function DoneAddingToCartButton({
       </div>
       
       <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-        Click "Done Adding to Cart" to proceed with payment processing
+        Click &quot;Done Adding to Cart&quot; to proceed with payment processing
       </p>
     </div>
   )

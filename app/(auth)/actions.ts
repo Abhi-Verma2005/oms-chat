@@ -6,14 +6,12 @@ import { createUser, getUser } from "@/db/queries";
 
 import { signIn } from "./auth";
 
+import type { LoginActionState, RegisterActionState } from "./types";
+
 const authFormSchema = z.object({
   email: z.string().email(),
   password: z.string().min(6),
 });
-
-export interface LoginActionState {
-  status: "idle" | "in_progress" | "success" | "failed" | "invalid_data";
-}
 
 export const login = async (
   _: LoginActionState,
@@ -41,15 +39,6 @@ export const login = async (
   }
 };
 
-export interface RegisterActionState {
-  status:
-    | "idle"
-    | "in_progress"
-    | "success"
-    | "failed"
-    | "user_exists"
-    | "invalid_data";
-}
 
 export const register = async (
   _: RegisterActionState,

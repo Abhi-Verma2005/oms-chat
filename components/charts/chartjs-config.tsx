@@ -1,5 +1,6 @@
 // Import Chart.js
 import { Chart, Tooltip } from 'chart.js'
+
 import { adjustColorOpacity, getCssVariable } from '@/lib/utils'
 
 Chart.register(Tooltip)

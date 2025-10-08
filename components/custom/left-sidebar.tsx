@@ -1,9 +1,11 @@
 "use client";
 
+import { SlashIcon, Menu, X } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import { useState } from "react";
-import { SlashIcon, Menu, X } from "lucide-react";
+
+import { signOutAction } from "@/lib/actions";
 
 import { History } from "./history";
 import Logo from "./logo";
@@ -15,8 +17,6 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-
-import { signOutAction } from "@/lib/actions";
 
 interface LeftSidebarProps {
   user?: any;
@@ -37,7 +37,7 @@ export function LeftSidebar({ user, onCollapseChange }: LeftSidebarProps) {
       isCollapsed ? 'w-16' : 'w-64'
     }`}>
       {/* Top Section - Logo & App Name + Toggle Button (20%) */}
-      <div className="flex-shrink-0 p-4 border-b border-border relative" style={{ height: '20%', minHeight: '80px' }}>
+      <div className="shrink-0 p-4 border-b border-border relative" style={{ height: '20%', minHeight: '80px' }}>
         <div className="flex flex-col items-center justify-center h-full space-y-3">
           {/* Logo and App Name */}
           {!isCollapsed ? (
@@ -66,10 +66,10 @@ export function LeftSidebar({ user, onCollapseChange }: LeftSidebarProps) {
             variant="ghost"
             size="sm"
             onClick={handleToggleCollapse}
-            className="p-1 h-6 w-6 opacity-70 hover:opacity-100 transition-all duration-300"
+            className="p-1 size-6 opacity-70 hover:opacity-100 transition-all duration-300"
             title={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            {isCollapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
+            {isCollapsed ? <Menu className="size-4" /> : <X className="size-4" />}
           </Button>
         </div>
       </div>
@@ -98,7 +98,7 @@ export function LeftSidebar({ user, onCollapseChange }: LeftSidebarProps) {
       </div>
 
       {/* Bottom Section - Profile & Settings (10%) */}
-      <div className="flex-shrink-0 p-4 border-t border-border" style={{ height: '10%', minHeight: '60px' }}>
+      <div className="shrink-0 p-4 border-t border-border" style={{ height: '10%', minHeight: '60px' }}>
         <div className="flex flex-col items-center justify-center h-full space-y-3">
           {user ? (
             <>
@@ -153,7 +153,7 @@ export function LeftSidebar({ user, onCollapseChange }: LeftSidebarProps) {
               asChild
             >
               <Link href="/login">
-                {isCollapsed ? <Menu className="h-4 w-4" /> : 'Login'}
+                {isCollapsed ? <Menu className="size-4" /> : 'Login'}
               </Link>
             </Button>
           )}

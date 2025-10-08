@@ -1,7 +1,7 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import mermaid from "mermaid";
+import { useEffect, useRef, useState } from "react";
 
 interface MermaidChartProps {
   code: string;
@@ -68,9 +68,7 @@ export const MermaidChart = ({ code }: MermaidChartProps) => {
             leftPadding: 75,
             gridLineStartPadding: 35,
             fontSize: 11,
-            fontFamily: '"Open Sans", sans-serif',
             sectionFontSize: 24,
-            sectionFontFamily: '"Open Sans", sans-serif',
             numberSectionStyles: 4,
           },
         });

@@ -1,11 +1,12 @@
 "use client"
 
-import React, { useState } from 'react'
 import { Elements, useElements, useStripe, PaymentElement } from "@stripe/react-stripe-js"
 import { loadStripe } from "@stripe/stripe-js"
+import { CheckCircle, CreditCard, Lock, Shield, AlertCircle } from 'lucide-react'
+import React, { useState, useEffect, useMemo } from 'react'
+
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { CheckCircle, CreditCard, Lock, Shield, AlertCircle } from 'lucide-react'
 
 const stripePromise = loadStripe(
   process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || 
@@ -39,7 +40,7 @@ export default function StripePaymentComponent({
   const [clientSecret, setClientSecret] = useState<string | null>(null)
   const [isDark, setIsDark] = useState(false)
 
-  React.useEffect(() => {
+  useEffect(() => {
     const root = document.documentElement
     const update = () => setIsDark(root.classList.contains('dark'))
     update()
@@ -48,7 +49,7 @@ export default function StripePaymentComponent({
     return () => observer.disconnect()
   }, [])
 
-  React.useEffect(() => {
+  useEffect(() => {
     let ignore = false
     async function createIntent() {
       if (!amount || amount <= 0) {
@@ -94,7 +95,7 @@ export default function StripePaymentComponent({
     return () => { ignore = true }
   }, [amount, currency, items])
 
-  const options = React.useMemo(() => (
+  const options = useMemo(() => (
     clientSecret
       ? {
           clientSecret,
@@ -248,7 +249,7 @@ function PaymentForm({
   const [success, setSuccess] = useState<string | null>(null)
 
   // Debug Stripe initialization
-  React.useEffect(() => {
+  useEffect(() => {
     console.log('PaymentForm: Stripe initialized:', !!stripe)
     console.log('PaymentForm: Elements initialized:', !!elements)
   }, [stripe, elements])
@@ -342,7 +343,7 @@ function PaymentForm({
       </div>
       
       <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
-        You'll be charged ${amount.toFixed(2)}, including applicable taxes
+        You&apos;ll be charged ${amount.toFixed(2)}, including applicable taxes
       </div>
     </form>
   )

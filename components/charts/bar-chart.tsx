@@ -1,16 +1,16 @@
 'use client'
 
-import { useRef, useState, useEffect } from 'react'
-import { useTheme } from 'next-themes'
-
-import { chartColors } from '@/components/charts/chartjs-config'
 import {
   Chart, BarController, BarElement, LinearScale, CategoryScale, Tooltip, Legend,
 } from 'chart.js'
-import type { ChartData } from 'chart.js'
+import { useTheme } from 'next-themes'
+import { useRef, useState, useEffect } from 'react'
 
-// Import utilities
+
+import { chartColors } from '@/components/charts/chartjs-config'
 import { formatValue } from '@/lib/utils'
+
+import type { ChartData } from 'chart.js'
 
 Chart.register(BarController, BarElement, LinearScale, CategoryScale, Tooltip, Legend)
 

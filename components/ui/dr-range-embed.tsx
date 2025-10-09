@@ -22,7 +22,7 @@ export function DRRangeEmbed({ onConfirm, onSkip }: DRRangeEmbedProps) {
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4 space-y-4 max-w-md">
+    <div className="bg-card border border-border rounded-lg p-4 space-y-4 max-w-sm">
       {/* Header */}
       <div className="flex items-center gap-2">
         <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-md">
@@ -53,7 +53,10 @@ export function DRRangeEmbed({ onConfirm, onSkip }: DRRangeEmbedProps) {
               step="1"
               value={drRange.minDR}
               onChange={(e) => setDrRange(prev => ({ ...prev, minDR: parseInt(e.target.value) }))}
-              className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-muted/80 rounded-full appearance-none cursor-pointer slider-thumb"
+              style={{
+                background: `linear-gradient(to right, hsl(var(--primary)/0.55) 0%, hsl(var(--primary)/0.55) ${((drRange.minDR - 1) / (50 - 1)) * 100}%, #e5e7eb ${((drRange.minDR - 1) / (50 - 1)) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
           <div className="space-y-1">
@@ -68,7 +71,10 @@ export function DRRangeEmbed({ onConfirm, onSkip }: DRRangeEmbedProps) {
               step="1"
               value={drRange.maxDR}
               onChange={(e) => setDrRange(prev => ({ ...prev, maxDR: parseInt(e.target.value) }))}
-              className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-muted/80 rounded-full appearance-none cursor-pointer slider-thumb"
+              style={{
+                background: `linear-gradient(to right, hsl(var(--primary)/0.55) 0%, hsl(var(--primary)/0.55) ${((drRange.maxDR - 50) / (100 - 50)) * 100}%, #e5e7eb ${((drRange.maxDR - 50) / (100 - 50)) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
         </div>
@@ -93,7 +99,10 @@ export function DRRangeEmbed({ onConfirm, onSkip }: DRRangeEmbedProps) {
               step="1"
               value={drRange.minDA}
               onChange={(e) => setDrRange(prev => ({ ...prev, minDA: parseInt(e.target.value) }))}
-              className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-muted/80 rounded-full appearance-none cursor-pointer slider-thumb"
+              style={{
+                background: `linear-gradient(to right, hsl(var(--primary)/0.55) 0%, hsl(var(--primary)/0.55) ${((drRange.minDA - 1) / (50 - 1)) * 100}%, #e5e7eb ${((drRange.minDA - 1) / (50 - 1)) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
           <div className="space-y-1">
@@ -108,7 +117,10 @@ export function DRRangeEmbed({ onConfirm, onSkip }: DRRangeEmbedProps) {
               step="1"
               value={drRange.maxDA}
               onChange={(e) => setDrRange(prev => ({ ...prev, maxDA: parseInt(e.target.value) }))}
-              className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer slider"
+              className="w-full h-2 bg-muted/80 rounded-full appearance-none cursor-pointer slider-thumb"
+              style={{
+                background: `linear-gradient(to right, hsl(var(--primary)/0.55) 0%, hsl(var(--primary)/0.55) ${((drRange.maxDA - 50) / (100 - 50)) * 100}%, #e5e7eb ${((drRange.maxDA - 50) / (100 - 50)) * 100}%, #e5e7eb 100%)`
+              }}
             />
           </div>
         </div>
@@ -130,19 +142,19 @@ export function DRRangeEmbed({ onConfirm, onSkip }: DRRangeEmbedProps) {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 justify-end">
         <Button
           onClick={onSkip}
           variant="outline"
           size="sm"
-          className="flex-1 text-xs h-8"
+          className="text-xs h-8 px-4"
         >
           Skip
         </Button>
         <Button
           onClick={handleConfirm}
           size="sm"
-          className="flex-1 text-xs h-8 bg-purple-600 hover:bg-purple-700"
+          className="text-xs h-8 px-4 bg-purple-600 hover:bg-purple-700"
         >
           Apply Filter
         </Button>

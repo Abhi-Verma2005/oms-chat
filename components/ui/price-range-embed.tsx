@@ -17,7 +17,7 @@ export function PriceRangeEmbed({ onConfirm, onSkip }: PriceRangeEmbedProps) {
   };
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4 space-y-4 max-w-md">
+    <div className="bg-card border border-border rounded-lg p-4 space-y-4 max-w-sm">
       {/* Header */}
       <div className="flex items-center gap-2">
         <div className="p-1.5 bg-purple-100 dark:bg-purple-900/30 rounded-md">
@@ -43,7 +43,10 @@ export function PriceRangeEmbed({ onConfirm, onSkip }: PriceRangeEmbedProps) {
             step="50"
             value={priceRange.min}
             onChange={(e) => setPriceRange(prev => ({ ...prev, min: parseInt(e.target.value) }))}
-            className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer slider"
+            className="w-full h-2 bg-muted/80 rounded-full appearance-none cursor-pointer slider-thumb"
+            style={{
+              background: `linear-gradient(to right, hsl(var(--primary)/0.6) 0%, hsl(var(--primary)/0.6) ${((priceRange.min - 50) / (500 - 50)) * 100}%, #e5e7eb ${((priceRange.min - 50) / (500 - 50)) * 100}%, #e5e7eb 100%)`
+            }}
           />
         </div>
 
@@ -59,7 +62,10 @@ export function PriceRangeEmbed({ onConfirm, onSkip }: PriceRangeEmbedProps) {
             step="50"
             value={priceRange.max}
             onChange={(e) => setPriceRange(prev => ({ ...prev, max: parseInt(e.target.value) }))}
-            className="w-full h-1.5 bg-muted rounded-lg appearance-none cursor-pointer slider"
+            className="w-full h-2 bg-muted/80 rounded-full appearance-none cursor-pointer slider-thumb"
+            style={{
+              background: `linear-gradient(to right, hsl(var(--primary)/0.6) 0%, hsl(var(--primary)/0.6) ${((priceRange.max - 200) / (2000 - 200)) * 100}%, #e5e7eb ${((priceRange.max - 200) / (2000 - 200)) * 100}%, #e5e7eb 100%)`
+            }}
           />
         </div>
       </div>
@@ -73,19 +79,19 @@ export function PriceRangeEmbed({ onConfirm, onSkip }: PriceRangeEmbedProps) {
       </div>
 
       {/* Action Buttons */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 justify-end">
         <Button
           onClick={onSkip}
           variant="outline"
           size="sm"
-          className="flex-1 text-xs h-8"
+          className="text-xs h-8 px-4"
         >
           Skip
         </Button>
         <Button
           onClick={handleConfirm}
           size="sm"
-          className="flex-1 text-xs h-8 bg-purple-600 hover:bg-purple-700"
+          className="text-xs h-8 px-4 bg-purple-600 hover:bg-purple-700"
         >
           Apply Filter
         </Button>

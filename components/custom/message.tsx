@@ -28,6 +28,7 @@ export const Message = ({
   onRegenerate,
   isLastMessage = false,
   isGenerating = false,
+  onAppendMessage,
 }: {
   chatId: string;
   role: string;
@@ -37,6 +38,7 @@ export const Message = ({
   onRegenerate?: () => void;
   isLastMessage?: boolean;
   isGenerating?: boolean;
+  onAppendMessage?: (message: { role: 'user'; content: string }) => Promise<string | null | undefined>;
 }) => {
   const { setRightPanelContent, closeRightPanel } = useSplitScreen();
   const { addItem, removeItem, getCartItemIds, state: cartState, clearCart } = useCart();
@@ -45,9 +47,7 @@ export const Message = ({
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
   
-  // Embedded component states for filter collection
-  const [showPriceEmbed, setShowPriceEmbed] = useState(false);
-  const [showDREmbed, setShowDREmbed] = useState(false);
+  // Filter collection state
   const [collectedFilters, setCollectedFilters] = useState<{
     priceRange?: { min: number; max: number };
     drRange?: { minDR: number; maxDR: number; minDA: number; maxDA: number };
@@ -109,60 +109,32 @@ export const Message = ({
   // Function to trigger AI to continue filter collection
   const triggerFilterCollectionStep = useCallback(async (step: string, filters: any) => {
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: chatId,
-          messages: [
-            {
-              role: 'user',
-              content: `Continue with ${step} filter collection. Current filters: ${JSON.stringify(filters)}`
-            }
-          ]
-        }),
-      });
+      const message = `I've set my ${step === 'price' ? 'price range' : 'DR/DA ranges'}. Please continue with the next step in the filter collection process. Current filters: ${JSON.stringify(filters)}`;
+      await onAppendMessage?.({ role: 'user', content: message });
     } catch (error) {
       console.error('Error triggering filter collection step:', error);
     }
-  }, [chatId]);
+  }, [onAppendMessage]);
 
   // Function to trigger final browse publishers call
   const triggerFinalBrowseCall = useCallback(async (filters: any) => {
     try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          id: chatId,
-          messages: [
-            {
-              role: 'user',
-              content: `Now browse publishers with these filters: ${JSON.stringify(filters)}`
-            }
-          ]
-        }),
-      });
+      const message = `Perfect! I've completed setting up all my filters. Please now browse publishers with these filters: ${JSON.stringify(filters)}`;
+      await onAppendMessage?.({ role: 'user', content: message });
     } catch (error) {
       console.error('Error triggering final browse call:', error);
     }
-  }, [chatId]);
+  }, [onAppendMessage]);
 
-  // Embedded component handlers for filter collection
+  // Filter collection handlers
   const handlePriceRangeConfirm = useCallback((priceRange: { min: number; max: number }) => {
     const newFilters = { ...collectedFilters, priceRange };
     setCollectedFilters(newFilters);
-    setShowPriceEmbed(false);
     // Trigger next step - DR range collection
     triggerFilterCollectionStep("dr", newFilters);
   }, [collectedFilters, triggerFilterCollectionStep]);
 
   const handlePriceRangeSkip = useCallback(() => {
-    setShowPriceEmbed(false);
     // Trigger next step - DR range collection
     triggerFilterCollectionStep("dr", collectedFilters);
   }, [collectedFilters, triggerFilterCollectionStep]);
@@ -170,7 +142,6 @@ export const Message = ({
   const handleDRRangeConfirm = useCallback((drRange: { minDR: number; maxDR: number; minDA: number; maxDA: number }) => {
     const newFilters = { ...collectedFilters, drRange };
     setCollectedFilters(newFilters);
-    setShowDREmbed(false);
     // Trigger final browse publishers call with proper filter format
     const browseFilters = {
       minDR: drRange.minDR,
@@ -186,7 +157,6 @@ export const Message = ({
   }, [collectedFilters, triggerFinalBrowseCall]);
 
   const handleDRRangeSkip = useCallback(() => {
-    setShowDREmbed(false);
     // Trigger final browse publishers call with available filters
     const browseFilters = {
       ...(collectedFilters.priceRange && {
@@ -197,21 +167,6 @@ export const Message = ({
     triggerFinalBrowseCall(browseFilters);
   }, [collectedFilters, triggerFinalBrowseCall]);
 
-  // Handle filter collection result and show appropriate embedded component
-  const handleFilterCollectionResult = useCallback((result: any) => {
-    console.log('🎯 Handling filter collection result:', result);
-    
-    if (result.action === "show_price_modal") {
-      console.log('💰 Setting showPriceEmbed to true');
-      setShowPriceEmbed(true);
-    } else if (result.action === "show_dr_modal") {
-      console.log('📊 Setting showDREmbed to true');
-      setShowDREmbed(true);
-    } else if (result.action === "collect_complete") {
-      // All filters collected, ready to browse
-      console.log('✅ Filter collection complete:', result.collectedFilters);
-    }
-  }, []);
 
   const handleDoneAddingToCart = useCallback(() => {
     if (cartState.items.length === 0) return;
@@ -383,30 +338,9 @@ export const Message = ({
         console.log('🔧 Tool call completed:', { toolName, toolCallId, state, result: toolInvocation.result });
         const { result } = toolInvocation as any;
         
-        // Auto-open embedded filter modals when browsePublishers has no filters provided
-        if (toolName === "browsePublishers") {
-          const filters = result?.filters || {};
-          const hasAnyFilter = Object.values(filters || {}).some((v: any) => !!v);
-          if (!hasAnyFilter) {
-            // No filters at all → start with price embed (transform loading into modal)
-            setShowPriceEmbed(true);
-          } else {
-            // If price missing but DR present, start price; if price present but DR missing, start DR
-            const hasPrice = typeof (filters as any)?.minPrice !== 'undefined' || typeof (filters as any)?.maxPrice !== 'undefined' || (filters as any)?.priceRange;
-            const hasDR = typeof (filters as any)?.minDR !== 'undefined' || typeof (filters as any)?.maxDR !== 'undefined' || (filters as any)?.drRange;
-            if (!hasPrice && !hasDR) {
-              setShowPriceEmbed(true);
-            } else if (hasPrice && !hasDR) {
-              setShowDREmbed(true);
-            } else if (!hasPrice && hasDR) {
-              setShowPriceEmbed(true);
-            }
-          }
-        }
-
-        // Always handle collectPublisherFilters inline (embedded), don't open sidebar
+        // Handle collectPublisherFilters inline (embedded), don't open sidebar
         if (toolName === "collectPublisherFilters") {
-          handleFilterCollectionResult(result);
+          // Don't open sidebar for filter collection - handled in result state
         } else {
           showInRightPanel(toolName, result, `result-${toolCallId}`);
         }
@@ -415,7 +349,7 @@ export const Message = ({
         openedToolCalls.current.delete(toolCallId);
       }
     });
-  }, [toolStateSignature, toolInvocations, showInRightPanel, setRightPanelContent, handleFilterCollectionResult]);
+  }, [toolStateSignature, toolInvocations, showInRightPanel, setRightPanelContent]);
 
   return (
     <motion.div
@@ -457,31 +391,6 @@ export const Message = ({
           </div>
         )}
 
-        {/* Embedded Filter Collection Components */}
-        {showPriceEmbed && (
-          <div className="mt-4">
-            <PriceRangeEmbed
-              onConfirm={handlePriceRangeConfirm}
-              onSkip={handlePriceRangeSkip}
-            />
-          </div>
-        )}
-
-        {showDREmbed && (
-          <div className="mt-4">
-            <DRRangeEmbed
-              onConfirm={handleDRRangeConfirm}
-              onSkip={handleDRRangeSkip}
-            />
-          </div>
-        )}
-
-        {/* Debug state */}
-        {process.env.NODE_ENV === 'development' && (
-          <div className="text-xs text-muted-foreground mt-2">
-            Debug: showPriceEmbed={showPriceEmbed.toString()}, showDREmbed={showDREmbed.toString()}
-          </div>
-        )}
 
         {toolInvocations && (
           <div className="flex flex-col gap-3 mt-4">
@@ -495,13 +404,8 @@ export const Message = ({
               if (state === "result") {
                 const { result } = toolInvocation;
 
-                // Special handling for browsePublishers - only show summary card if no embedded modals are active
+                // Special handling for browsePublishers to show a more informative summary
                 if (toolName === "browsePublishers") {
-                  // Don't show the summary card if we're showing embedded modals
-                  if (showPriceEmbed || showDREmbed) {
-                    return null;
-                  }
-                  
                   const { publishers, metadata, filters } = result;
                   const appliedFilters = filters ? Object.entries(filters).filter(([_, value]) => value).map(([key, value]) => `${key}: ${value}`) : [];
                   
@@ -523,7 +427,9 @@ export const Message = ({
                           </div>
                           <h3 className="text-foreground font-medium text-sm whitespace-nowrap">Publisher Search Results</h3>
                         </div>
-                        <span className="text-muted-foreground text-xs">Click to view →</span>
+                        <span className="text-muted-foreground text-xs">
+                          Expand →
+                        </span>
                       </div>
                       
                       <div className="space-y-2 text-xs text-muted-foreground">
@@ -554,10 +460,65 @@ export const Message = ({
                   );
                 }
 
-                // For other tools, only show result card if no embedded modals are active
-                // Also don't show result card for collectPublisherFilters since it shows embedded modal
-                if (showPriceEmbed || showDREmbed || toolName === "collectPublisherFilters") {
-                  return null;
+                // Special handling for collectPublisherFilters - show embedded input modal
+                if (toolName === "collectPublisherFilters") {
+                  const { action, message, collectedFilters } = result;
+                  
+                  if (action === "show_price_modal") {
+                    return (
+                      <div key={toolCallId} className="max-w-md">
+                        <PriceRangeEmbed
+                          onConfirm={handlePriceRangeConfirm}
+                          onSkip={handlePriceRangeSkip}
+                        />
+                      </div>
+                    );
+                  } else if (action === "show_dr_modal") {
+                    return (
+                      <div key={toolCallId} className="max-w-md">
+                        <DRRangeEmbed
+                          onConfirm={handleDRRangeConfirm}
+                          onSkip={handleDRRangeSkip}
+                        />
+                      </div>
+                    );
+                  } else if (action === "collect_complete") {
+                    return (
+                      <div key={toolCallId} className="bg-card border border-border rounded-lg p-4 max-w-md">
+                        <div className="flex items-center gap-2 mb-3">
+                          <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-md">
+                            <div className="size-4 bg-green-600 dark:bg-green-400 rounded-full flex items-center justify-center">
+                              <div className="size-2 bg-white rounded-full"></div>
+                            </div>
+                          </div>
+                          <div>
+                            <h3 className="text-sm font-semibold text-foreground">Filters Complete</h3>
+                            <p className="text-xs text-muted-foreground">Ready to search publishers</p>
+                          </div>
+                        </div>
+                        <div className="text-xs text-muted-foreground mb-3">
+                          {message}
+                        </div>
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => triggerFinalBrowseCall(collectedFilters)}
+                            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium px-3 py-2 rounded-md transition-colors"
+                          >
+                            Search Publishers
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  // Fallback for unknown actions
+                  return (
+                    <div key={toolCallId} className="bg-card border border-border rounded-lg p-3 max-w-md">
+                      <div className="text-sm text-muted-foreground">
+                        {message}
+                      </div>
+                    </div>
+                  );
                 }
 
                 return (
@@ -573,11 +534,6 @@ export const Message = ({
                   </div>
                 );
               } else {
-                // For loading states, only show if no embedded modals are active
-                if (showPriceEmbed || showDREmbed) {
-                  return null;
-                }
-                
                 return (
                   <div key={toolCallId} className="relative bg-card border border-border rounded-lg p-3 overflow-hidden w-fit max-w-full">
                     {/* Animated border light */}

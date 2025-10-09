@@ -146,6 +146,7 @@ export function Chat({
                 onRegenerate={handleRegenerate}
                 isLastMessage={index === messages.length - 1}
                 isGenerating={isLoading && index === messages.length - 1}
+                onAppendMessage={append}
               />
             ))}
 

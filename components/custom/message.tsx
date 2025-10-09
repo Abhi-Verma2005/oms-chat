@@ -16,6 +16,8 @@ import CartManagementResults from "../oms/cart-management-results";
 import { OrdersDisplayResults } from "../oms/orders-display-results";
 import StripePaymentComponent from "../oms/stripe-payment-component";
 import { PublishersResults } from "../publishers/publishers-results";
+import { DRRangeEmbed } from "../ui/dr-range-embed";
+import { PriceRangeEmbed } from "../ui/price-range-embed";
 
 export const Message = ({
   chatId,
@@ -42,6 +44,14 @@ export const Message = ({
   const openedToolCalls = useRef<Set<string>>(new Set());
   const [copied, setCopied] = useState(false);
   const [feedback, setFeedback] = useState<'up' | 'down' | null>(null);
+  
+  // Embedded component states for filter collection
+  const [showPriceEmbed, setShowPriceEmbed] = useState(false);
+  const [showDREmbed, setShowDREmbed] = useState(false);
+  const [collectedFilters, setCollectedFilters] = useState<{
+    priceRange?: { min: number; max: number };
+    drRange?: { minDR: number; maxDR: number; minDA: number; maxDA: number };
+  }>({});
 
   // Copy functionality
   const handleCopy = useCallback(async () => {
@@ -96,6 +106,113 @@ export const Message = ({
   }, [chatId]);
 
   // Function to handle "Done Adding to Cart" button click
+  // Function to trigger AI to continue filter collection
+  const triggerFilterCollectionStep = useCallback(async (step: string, filters: any) => {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: chatId,
+          messages: [
+            {
+              role: 'user',
+              content: `Continue with ${step} filter collection. Current filters: ${JSON.stringify(filters)}`
+            }
+          ]
+        }),
+      });
+    } catch (error) {
+      console.error('Error triggering filter collection step:', error);
+    }
+  }, [chatId]);
+
+  // Function to trigger final browse publishers call
+  const triggerFinalBrowseCall = useCallback(async (filters: any) => {
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: chatId,
+          messages: [
+            {
+              role: 'user',
+              content: `Now browse publishers with these filters: ${JSON.stringify(filters)}`
+            }
+          ]
+        }),
+      });
+    } catch (error) {
+      console.error('Error triggering final browse call:', error);
+    }
+  }, [chatId]);
+
+  // Embedded component handlers for filter collection
+  const handlePriceRangeConfirm = useCallback((priceRange: { min: number; max: number }) => {
+    const newFilters = { ...collectedFilters, priceRange };
+    setCollectedFilters(newFilters);
+    setShowPriceEmbed(false);
+    // Trigger next step - DR range collection
+    triggerFilterCollectionStep("dr", newFilters);
+  }, [collectedFilters, triggerFilterCollectionStep]);
+
+  const handlePriceRangeSkip = useCallback(() => {
+    setShowPriceEmbed(false);
+    // Trigger next step - DR range collection
+    triggerFilterCollectionStep("dr", collectedFilters);
+  }, [collectedFilters, triggerFilterCollectionStep]);
+
+  const handleDRRangeConfirm = useCallback((drRange: { minDR: number; maxDR: number; minDA: number; maxDA: number }) => {
+    const newFilters = { ...collectedFilters, drRange };
+    setCollectedFilters(newFilters);
+    setShowDREmbed(false);
+    // Trigger final browse publishers call with proper filter format
+    const browseFilters = {
+      minDR: drRange.minDR,
+      maxDR: drRange.maxDR,
+      minDA: drRange.minDA,
+      maxDA: drRange.maxDA,
+      ...(collectedFilters.priceRange && {
+        minPrice: collectedFilters.priceRange.min,
+        maxPrice: collectedFilters.priceRange.max
+      })
+    };
+    triggerFinalBrowseCall(browseFilters);
+  }, [collectedFilters, triggerFinalBrowseCall]);
+
+  const handleDRRangeSkip = useCallback(() => {
+    setShowDREmbed(false);
+    // Trigger final browse publishers call with available filters
+    const browseFilters = {
+      ...(collectedFilters.priceRange && {
+        minPrice: collectedFilters.priceRange.min,
+        maxPrice: collectedFilters.priceRange.max
+      })
+    };
+    triggerFinalBrowseCall(browseFilters);
+  }, [collectedFilters, triggerFinalBrowseCall]);
+
+  // Handle filter collection result and show appropriate embedded component
+  const handleFilterCollectionResult = useCallback((result: any) => {
+    console.log('🎯 Handling filter collection result:', result);
+    
+    if (result.action === "show_price_modal") {
+      console.log('💰 Setting showPriceEmbed to true');
+      setShowPriceEmbed(true);
+    } else if (result.action === "show_dr_modal") {
+      console.log('📊 Setting showDREmbed to true');
+      setShowDREmbed(true);
+    } else if (result.action === "collect_complete") {
+      // All filters collected, ready to browse
+      console.log('✅ Filter collection complete:', result.collectedFilters);
+    }
+  }, []);
+
   const handleDoneAddingToCart = useCallback(() => {
     if (cartState.items.length === 0) return;
     
@@ -168,13 +285,9 @@ export const Message = ({
                   da: publisher.authority.da
                 }
               });
-              // Auto-close sidebar after adding to cart
-              setTimeout(() => closeRightPanel(), 500);
             }}
             onRemoveFromCart={(publisherId) => {
               removeItem(publisherId);
-              // Auto-close sidebar after removing from cart
-              setTimeout(() => closeRightPanel(), 500);
             }}
             cartItems={getCartItemIds()}
           />
@@ -269,12 +382,40 @@ export const Message = ({
       if (state === "result" && !processedToolCalls.current.has(toolCallId)) {
         console.log('🔧 Tool call completed:', { toolName, toolCallId, state, result: toolInvocation.result });
         const { result } = toolInvocation as any;
-        showInRightPanel(toolName, result, `result-${toolCallId}`);
+        
+        // Auto-open embedded filter modals when browsePublishers has no filters provided
+        if (toolName === "browsePublishers") {
+          const filters = result?.filters || {};
+          const hasAnyFilter = Object.values(filters || {}).some((v: any) => !!v);
+          if (!hasAnyFilter) {
+            // No filters at all → start with price embed (transform loading into modal)
+            setShowPriceEmbed(true);
+          } else {
+            // If price missing but DR present, start price; if price present but DR missing, start DR
+            const hasPrice = typeof (filters as any)?.minPrice !== 'undefined' || typeof (filters as any)?.maxPrice !== 'undefined' || (filters as any)?.priceRange;
+            const hasDR = typeof (filters as any)?.minDR !== 'undefined' || typeof (filters as any)?.maxDR !== 'undefined' || (filters as any)?.drRange;
+            if (!hasPrice && !hasDR) {
+              setShowPriceEmbed(true);
+            } else if (hasPrice && !hasDR) {
+              setShowDREmbed(true);
+            } else if (!hasPrice && hasDR) {
+              setShowPriceEmbed(true);
+            }
+          }
+        }
+
+        // Always handle collectPublisherFilters inline (embedded), don't open sidebar
+        if (toolName === "collectPublisherFilters") {
+          handleFilterCollectionResult(result);
+        } else {
+          showInRightPanel(toolName, result, `result-${toolCallId}`);
+        }
+        
         processedToolCalls.current.add(toolCallId);
         openedToolCalls.current.delete(toolCallId);
       }
     });
-  }, [toolStateSignature, toolInvocations, showInRightPanel, setRightPanelContent]);
+  }, [toolStateSignature, toolInvocations, showInRightPanel, setRightPanelContent, handleFilterCollectionResult]);
 
   return (
     <motion.div
@@ -316,6 +457,32 @@ export const Message = ({
           </div>
         )}
 
+        {/* Embedded Filter Collection Components */}
+        {showPriceEmbed && (
+          <div className="mt-4">
+            <PriceRangeEmbed
+              onConfirm={handlePriceRangeConfirm}
+              onSkip={handlePriceRangeSkip}
+            />
+          </div>
+        )}
+
+        {showDREmbed && (
+          <div className="mt-4">
+            <DRRangeEmbed
+              onConfirm={handleDRRangeConfirm}
+              onSkip={handleDRRangeSkip}
+            />
+          </div>
+        )}
+
+        {/* Debug state */}
+        {process.env.NODE_ENV === 'development' && (
+          <div className="text-xs text-muted-foreground mt-2">
+            Debug: showPriceEmbed={showPriceEmbed.toString()}, showDREmbed={showDREmbed.toString()}
+          </div>
+        )}
+
         {toolInvocations && (
           <div className="flex flex-col gap-3 mt-4">
             {toolInvocations.map((toolInvocation) => {
@@ -327,6 +494,71 @@ export const Message = ({
 
               if (state === "result") {
                 const { result } = toolInvocation;
+
+                // Special handling for browsePublishers - only show summary card if no embedded modals are active
+                if (toolName === "browsePublishers") {
+                  // Don't show the summary card if we're showing embedded modals
+                  if (showPriceEmbed || showDREmbed) {
+                    return null;
+                  }
+                  
+                  const { publishers, metadata, filters } = result;
+                  const appliedFilters = filters ? Object.entries(filters).filter(([_, value]) => value).map(([key, value]) => `${key}: ${value}`) : [];
+                  
+                  return (
+                    <div 
+                      key={toolCallId} 
+                      onClick={() => {
+                        console.log('🔍 Opening sidebar with browsePublishers result');
+                        showInRightPanel(toolName, result);
+                      }}
+                      className="bg-card border border-border rounded-lg p-4 hover:bg-card/80 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-ui-teal/50 w-fit max-w-full"
+                    >
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1 bg-ui-teal/10 rounded">
+                            <div className="size-3 bg-ui-teal rounded-sm flex items-center justify-center">
+                              <div className="size-1.5 bg-white rounded-full"></div>
+                            </div>
+                          </div>
+                          <h3 className="text-foreground font-medium text-sm whitespace-nowrap">Publisher Search Results</h3>
+                        </div>
+                        <span className="text-muted-foreground text-xs">Click to view →</span>
+                      </div>
+                      
+                      <div className="space-y-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground">{metadata.totalCount}</span>
+                          <span>publishers found</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-4">
+                          <span>Avg DR: <span className="font-medium text-foreground">{metadata.averageDR}</span></span>
+                          <span>Avg DA: <span className="font-medium text-foreground">{metadata.averageDA}</span></span>
+                          <span>Price: <span className="font-medium text-foreground">${metadata.priceRange.min}-${metadata.priceRange.max}</span></span>
+                        </div>
+                        
+                        {appliedFilters.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            <span className="text-muted-foreground">Filters:</span>
+                            {appliedFilters.slice(0, 2).map((filter, index) => (
+                              <span key={index} className="bg-muted px-2 py-0.5 rounded text-xs">{filter}</span>
+                            ))}
+                            {appliedFilters.length > 2 && (
+                              <span className="text-muted-foreground">+{appliedFilters.length - 2} more</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // For other tools, only show result card if no embedded modals are active
+                // Also don't show result card for collectPublisherFilters since it shows embedded modal
+                if (showPriceEmbed || showDREmbed || toolName === "collectPublisherFilters") {
+                  return null;
+                }
 
                 return (
                   <div 
@@ -341,6 +573,11 @@ export const Message = ({
                   </div>
                 );
               } else {
+                // For loading states, only show if no embedded modals are active
+                if (showPriceEmbed || showDREmbed) {
+                  return null;
+                }
+                
                 return (
                   <div key={toolCallId} className="relative bg-card border border-border rounded-lg p-3 overflow-hidden w-fit max-w-full">
                     {/* Animated border light */}

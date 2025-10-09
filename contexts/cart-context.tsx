@@ -2,6 +2,8 @@
 
 import { createContext, useContext, useReducer, ReactNode, useEffect } from 'react'
 
+import { syncCartState } from '../ai/actions/cart-management'
+
 export interface CartItem {
   id: string
   type: "publisher" | "product"
@@ -125,6 +127,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
           addedAt: new Date(item.addedAt) 
         }))
         dispatch({ type: 'LOAD_CART', payload: parsed })
+        // Sync initial state with AI actions
+        syncCartState(parsed)
       }
     } catch (error) {
       console.error('Error loading cart from localStorage:', error)
@@ -134,6 +138,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     try {
       localStorage.setItem('oms-cart', JSON.stringify(state.items))
+      // Sync with AI actions
+      syncCartState(state.items)
     } catch (error) {
       console.error('Error saving cart to localStorage:', error)
     }

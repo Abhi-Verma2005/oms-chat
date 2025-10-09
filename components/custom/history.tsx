@@ -180,7 +180,6 @@ export const History = ({
                         onClick={() => {
                           setDeleteId(chat.id);
                           setShowDeleteDialog(true);
-                          onItemClick?.();
                         }}
                       >
                         <TrashIcon />

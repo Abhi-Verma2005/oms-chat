@@ -23,7 +23,7 @@ const suggestedActions = [
   {
     title: "Browse Publishers",
     label: "Find high-quality backlink opportunities",
-    action: "Browse publishers for backlink opportunities",
+    action: "Browse publishers for backlink opportunities with no filters",
   },
   {
     title: "View My Orders",
@@ -166,7 +166,7 @@ export function MultimodalInput({
       {messages.length === 0 &&
         attachments.length === 0 &&
         uploadQueue.length === 0 && (
-          <div className="grid sm:grid-cols-2 gap-6 w-full md:px-0 mx-auto md:max-w-[750px]">
+          <div className="grid sm:grid-cols-2 gap-4 w-full md:px-0 mx-auto md:max-w-[600px]">
             {suggestedActions.map((suggestedAction, index) => (
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
@@ -183,12 +183,12 @@ export function MultimodalInput({
                       content: suggestedAction.action,
                     });
                   }}
-                  className="border border-border bg-card w-full text-left text-foreground rounded-xl p-6 text-base hover:bg-secondary/50 transition-all duration-200 flex flex-col shadow-sm hover:shadow-md group"
+                  className="border border-border bg-card w-full text-left text-foreground rounded-lg p-4 text-sm hover:bg-secondary/50 transition-all duration-200 flex flex-col shadow-sm hover:shadow-md group"
                 >
-                  <span className="font-semibold text-lg mb-2 group-hover:text-primary transition-colors">
+                  <span className="font-semibold text-base mb-1 group-hover:text-primary transition-colors">
                     {suggestedAction.title}
                   </span>
-                  <span className="text-muted-foreground text-sm leading-relaxed">
+                  <span className="text-muted-foreground text-xs leading-relaxed">
                     {suggestedAction.label}
                   </span>
                 </button>

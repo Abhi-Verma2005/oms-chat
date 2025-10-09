@@ -11,6 +11,7 @@ import {
   clearCart,
   updateCartItemQuantity,
   displayOrdersFunction,
+  collectPublisherFilters,
 } from "../../../../ai/actions";
 import { auth } from "../../../../app/(auth)/auth";
 import {
@@ -21,7 +22,7 @@ import {
 import { generateUUID } from "../../../../lib/utils";
 
 export async function POST(request: Request) {
-  const { id, messages, userInfo }: { 
+  const { id, messages, userInfo, cartState }: { 
     id: string; 
     messages: Array<Message>;
     userInfo?: {
@@ -39,6 +40,21 @@ export async function POST(request: Request) {
         lastActive: string;
       };
     } | null;
+    cartState?: Array<{
+      id: string;
+      type: "publisher" | "product";
+      name: string;
+      price: number;
+      quantity: number;
+      addedAt: string;
+      metadata?: {
+        publisherId?: string;
+        website?: string;
+        niche?: string[];
+        dr?: number;
+        da?: number;
+      };
+    }>;
   } = await request.json();
 
   const session = await auth();
@@ -80,6 +96,12 @@ export async function POST(request: Request) {
           - end with a brief Next steps section when appropriate
           - use emojis strategically to enhance readability and engagement: ✅ for success/completion, 📌 for important points, 💡 for tips/insights, 📊 for data/metrics, 🧭 for guidance/next steps, 🎯 for goals/targets, 🔍 for search/analysis, ⚡ for quick actions, 🚀 for getting started, 💰 for pricing, 🌟 for recommendations, 📝 for notes, ⚠️ for warnings, 🎉 for celebrations
         - after every tool call, show the results to the user in a clear format.
+        - when browsePublishers tool is called, provide a CONCISE summary instead of listing all publishers:
+          - Say something like "I've found X publishers matching your criteria" 
+          - Highlight key stats (avg DR, DA, price range)
+          - Mention any filters applied
+          - Tell user to "Click the results card to view all publishers and add them to your cart"
+          - DO NOT list individual publishers in your response - the detailed table is shown in the right panel
         - today's date is ${new Date().toLocaleDateString()}.
         - ask follow up questions to help users find the right publishers for their needs.
         - help users understand publisher metrics like DR (Domain Rating), DA (Domain Authority), and spam scores.
@@ -229,7 +251,7 @@ export async function POST(request: Request) {
         description: "View the current contents of the shopping cart",
         parameters: z.object({}),
         execute: async () => {
-          const result = await viewCart();
+          const result = await viewCart(cartState);
           return result;
         },
       },
@@ -269,6 +291,32 @@ export async function POST(request: Request) {
             totalAmount,
             itemCount: cartItems.length,
             items: cartItems,
+          };
+        },
+      },
+      collectPublisherFilters: {
+        description: "Collect filters from user through interactive modals before browsing publishers. This tool shows modals in chat for better UX.",
+        parameters: z.object({
+          step: z.enum(["price", "dr", "complete"]).optional().describe("Current step in filter collection"),
+          userInput: z.string().optional().describe("User input or response to previous modal"),
+          currentFilters: z.object({
+            priceRange: z.object({
+              min: z.number().optional(),
+              max: z.number().optional()
+            }).optional(),
+            drRange: z.object({
+              minDR: z.number().optional(),
+              maxDR: z.number().optional(),
+              minDA: z.number().optional(),
+              maxDA: z.number().optional()
+            }).optional()
+          }).optional().describe("Filters collected so far"),
+        }),
+        execute: async ({ step, userInput, currentFilters }) => {
+          const result = await collectPublisherFilters({ step, userInput, currentFilters });
+          return {
+            ...result,
+            show_in_chat: true // This tells the message component to show modals in chat instead of sidebar
           };
         },
       },

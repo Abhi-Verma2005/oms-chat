@@ -8,6 +8,7 @@ import { ReactNode, useEffect, useRef, useCallback, useMemo, useState } from "re
 import { BotIcon, UserIcon } from "./icons";
 import Logo from "./logo";
 import { Markdown } from "./markdown";
+import { PlanDisplay } from "./plan-display";
 import { PreviewAttachment } from "./preview-attachment";
 import { Weather } from "./weather";
 import { useCart } from "../../contexts/cart-context";
@@ -456,6 +457,64 @@ export const Message = ({
                           </div>
                         )}
                       </div>
+                    </div>
+                  );
+                }
+
+                // Special handling for createExecutionPlan - show the plan as todo list
+                if (toolName === "createExecutionPlan") {
+                  const { planId, summary, steps, totalSteps, message } = result;
+                  console.log('🎯 createExecutionPlan result:', { planId, summary, steps, totalSteps, message });
+                  
+                  return (
+                    <div key={toolCallId}>
+                      <PlanDisplay 
+                        chatId={chatId}
+                        append={onAppendMessage}
+                        initialPlan={{
+                          id: planId,
+                          summary,
+                          steps: (steps || []).map((step: any, index: number) => ({
+                            id: `step-${index}`,
+                            stepIndex: index,
+                            description: step.description,
+                            toolName: step.toolName,
+                            status: 'pending'
+                          })),
+                          currentStepIndex: 0,
+                          totalSteps,
+                          status: 'active'
+                        }}
+                      />
+                    </div>
+                  );
+                }
+
+                // Special handling for updatePlanProgress - show updated plan as todo list
+                if (toolName === "updatePlanProgress") {
+                  const { planId, summary, steps, totalSteps, currentStepIndex, status, message } = result;
+                  console.log('🎯 updatePlanProgress result:', { planId, summary, steps, totalStepIndex: currentStepIndex, totalSteps, status, message });
+                  
+                  return (
+                    <div key={toolCallId}>
+                      <PlanDisplay 
+                        chatId={chatId}
+                        append={onAppendMessage}
+                        initialPlan={{
+                          id: planId,
+                          summary,
+                          steps: (steps || []).map((step: any, index: number) => ({
+                            id: step.id || `step-${index}`,
+                            stepIndex: step.stepIndex || index,
+                            description: step.description,
+                            toolName: step.toolName,
+                            status: step.status || (index < currentStepIndex ? 'completed' : 'pending')
+                          })),
+                          currentStepIndex,
+                          totalSteps,
+                          status
+                        }}
+                      />
                     </div>
                   );
                 }

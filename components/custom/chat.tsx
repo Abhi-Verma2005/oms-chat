@@ -54,7 +54,7 @@ export function Chat({
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const { isRightPanelOpen, rightPanelWidth, setRightPanelWidth } = useSplitScreen();
   const [isResizing, setIsResizing] = useState(false);
-  const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
+  const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Handle mouse move for resizing
@@ -114,6 +114,16 @@ export function Chat({
         />
       </div>
 
+      {/* Backdrop for sidebar when expanded */}
+      {!isLeftSidebarCollapsed && (
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-10"
+          onClick={() => {
+            setIsLeftSidebarCollapsed(true);
+          }}
+        />
+      )}
+
       <div 
         className={`flex flex-col justify-center pb-4 md:pb-8 transition-all duration-300 w-full ${
           isRightPanelOpen ? 'mr-0' : ''
@@ -125,9 +135,6 @@ export function Chat({
       >
         <div 
           className="flex flex-col justify-between items-center gap-4 h-full"
-          style={{
-            paddingLeft: isLeftSidebarCollapsed ? '0' : '256px'
-          }}
         >
           <div
             ref={messagesContainerRef}

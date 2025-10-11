@@ -13,6 +13,7 @@ import {
   displayOrdersFunction,
   collectPublisherFilters,
 } from "../../../../ai/actions";
+import { createExecutionPlan, updatePlanProgress } from "../../../../ai/actions/plan-management";
 import { auth } from "../../../../app/(auth)/auth";
 import {
   deleteChatById,
@@ -126,10 +127,17 @@ export async function POST(request: Request) {
           - Outbound Links: Number of external links on the page
         - when a user mentions a successful payment, acknowledge it enthusiastically and provide helpful next steps for their backlinking campaign
         - for successful payments, suggest next actions like content creation, outreach strategies, or campaign planning
-        - IMPORTANT: When users complete filter collection steps (price range, DR/DA ranges), always:
+        - CRITICAL: For ANY request involving publisher browsing, filtering, cart operations, or multi-step workflows, you MUST FIRST call createExecutionPlan tool to create a structured plan
+        - Examples that REQUIRE planning: "browse publishers", "find publishers with filters", "browse publishers for backlink opportunities", "add publishers to cart", "complete purchase flow", "apply filters in detail", "set up filters", "configure search parameters"
+        - Simple, single-step requests (like "show my cart" or "get weather") can be handled directly without planning
+        - NEVER skip planning for publisher-related requests - always create an execution plan first
+        - If user wants to modify or refine their search/filters, create a NEW plan for the updated requirements
+        - IMPORTANT: After completing ANY tool execution that's part of an execution plan, you MUST call updatePlanProgress to mark that step as completed
+        - When users complete filter collection steps (price range, DR/DA ranges), always:
           1. Acknowledge what they've set (e.g., "Great! I see you've set your price range to $200-$1000")
           2. Call the collectPublisherFilters tool to continue the next step
-          3. Be encouraging and explain what's happening next
+          3. Call updatePlanProgress to mark the step as completed
+          4. Be encouraging and explain what's happening next
         - When users say they've set filters, immediately use collectPublisherFilters tool with their current filters to continue the flow
         `;
 
@@ -166,6 +174,20 @@ export async function POST(request: Request) {
     system: generateSystemPrompt(userInfo || null),
     messages: coreMessages,
     tools: {
+      createExecutionPlan: {
+        description: "Create an execution plan for complex user requests that require multiple steps (like browsing publishers with filters, adding items to cart, processing payments). Use this FIRST for multi-step workflows before calling individual tools.",
+        parameters: z.object({
+          userRequest: z.string().describe("The user's request"),
+          context: z.any().describe("Current context (cart, filters, etc.)")
+        }),
+        execute: async ({ userRequest, context }) => {
+          return await createExecutionPlan({
+            chatId: id,
+            userRequest,
+            context: { userInfo, cartState, ...context }
+          });
+        }
+      },
       getWeather: {
         description: "Get the current weather at a location",
         parameters: z.object({
@@ -304,7 +326,7 @@ export async function POST(request: Request) {
         },
       },
       collectPublisherFilters: {
-        description: "Collect filters from user through interactive modals before browsing publishers. This tool shows modals in chat for better UX.",
+        description: "Collect filters from user through interactive modals before browsing publishers. This tool shows modals in chat for better UX. Usually called as part of an execution plan.",
         parameters: z.object({
           step: z.enum(["price", "dr", "complete"]).optional().describe("Current step in filter collection"),
           userInput: z.string().optional().describe("User input or response to previous modal"),
@@ -328,6 +350,17 @@ export async function POST(request: Request) {
             show_in_chat: true // This tells the message component to show modals in chat instead of sidebar
           };
         },
+      },
+      updatePlanProgress: {
+        description: "Update plan progress after completing a step. Call this IMMEDIATELY after each tool execution that's part of an execution plan to mark the step as completed.",
+        parameters: z.object({
+          planId: z.string().describe("Plan ID"),
+          stepIndex: z.number().describe("Completed step index"),
+          stepResult: z.any().describe("Result of the step")
+        }),
+        execute: async ({ planId, stepIndex, stepResult }) => {
+          return await updatePlanProgress({ planId, stepIndex, stepResult });
+        }
       },
     },
     onFinish: async ({ responseMessages }) => {

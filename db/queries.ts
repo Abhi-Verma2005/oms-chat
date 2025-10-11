@@ -1,11 +1,11 @@
 import "server-only";
 
-import { desc, eq } from "drizzle-orm";
+import { desc, eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 import { genSaltSync, hashSync } from "bcrypt-ts";
 
-import { chat } from "./schema";
+import { chat, executionPlan, planStep } from "./schema";
 import { external_db } from "@/lib/external-db";
 import { users } from "@/lib/drizzle-external/schema";
 
@@ -114,6 +114,129 @@ export async function getChatById({ id }: { id: string }) {
     return selectedChat;
   } catch (error) {
     console.error("Failed to get chat by id from database");
+    throw error;
+  }
+}
+
+// Plan management functions
+export async function createExecutionPlan(data: {
+  chatId: string;
+  summary: string;
+  steps: Array<{ description: string; toolName: string; stepIndex: number }>;
+}) {
+  try {
+    return await db.transaction(async (tx) => {
+      // Deactivate any existing active plan
+      await tx.update(executionPlan)
+        .set({ status: 'cancelled' })
+        .where(and(
+          eq(executionPlan.chatId, data.chatId),
+          eq(executionPlan.status, 'active')
+        ));
+
+      // Create new plan
+      const [plan] = await tx.insert(executionPlan)
+        .values({
+          chatId: data.chatId,
+          summary: data.summary,
+          totalSteps: data.steps.length,
+          currentStepIndex: 0,
+          status: 'active'
+        })
+        .returning();
+
+      // Create steps
+      const steps = await tx.insert(planStep)
+        .values(data.steps.map(step => ({
+          planId: plan.id,
+          ...step
+        })))
+        .returning();
+
+      return { ...plan, steps };
+    });
+  } catch (error) {
+    console.error("Failed to create execution plan:", error);
+    throw error;
+  }
+}
+
+export async function getActivePlan(chatId: string) {
+  try {
+    const plans = await db.select()
+      .from(executionPlan)
+      .leftJoin(planStep, eq(planStep.planId, executionPlan.id))
+      .where(and(
+        eq(executionPlan.chatId, chatId),
+        eq(executionPlan.status, 'active')
+      ))
+      .orderBy(planStep.stepIndex);
+
+    if (!plans || plans.length === 0) return null;
+
+    const plan = plans[0].ExecutionPlan;
+    const steps = plans.map(p => p.PlanStep).filter(Boolean);
+
+    return { ...plan, steps };
+  } catch (error) {
+    console.error("Failed to get active plan");
+    throw error;
+  }
+}
+
+export async function getPlanById(planId: string) {
+  try {
+    const plans = await db.select()
+      .from(executionPlan)
+      .leftJoin(planStep, eq(planStep.planId, executionPlan.id))
+      .where(eq(executionPlan.id, planId))
+      .orderBy(planStep.stepIndex);
+
+    if (!plans || plans.length === 0) return null;
+
+    const plan = plans[0].ExecutionPlan;
+    const steps = plans.map(p => p.PlanStep).filter(Boolean);
+
+    return { ...plan, steps };
+  } catch (error) {
+    console.error("Failed to get plan by ID");
+    throw error;
+  }
+}
+
+export async function updatePlanProgress(planId: string, stepIndex: number, stepResult: any) {
+  try {
+    return await db.transaction(async (tx) => {
+      // Update step status
+      await tx.update(planStep)
+        .set({
+          status: 'completed',
+          result: stepResult,
+          completedAt: new Date()
+        })
+        .where(and(
+          eq(planStep.planId, planId),
+          eq(planStep.stepIndex, stepIndex)
+        ));
+
+      // Update plan current step
+      await tx.update(executionPlan)
+        .set({
+          currentStepIndex: stepIndex + 1,
+          updatedAt: new Date()
+        })
+        .where(eq(executionPlan.id, planId));
+
+      // If all steps complete, mark plan as completed
+      const plan = await tx.select().from(executionPlan).where(eq(executionPlan.id, planId)).limit(1);
+      if (plan[0] && plan[0].currentStepIndex >= plan[0].totalSteps) {
+        await tx.update(executionPlan)
+          .set({ status: 'completed' })
+          .where(eq(executionPlan.id, planId));
+      }
+    });
+  } catch (error) {
+    console.error("Failed to update plan progress");
     throw error;
   }
 }

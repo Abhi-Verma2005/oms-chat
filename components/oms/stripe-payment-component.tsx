@@ -49,11 +49,24 @@ export default function StripePaymentComponent({
     return () => observer.disconnect()
   }, [])
 
+  // Track the amount for which we created the current payment intent
+  const [paymentIntentAmount, setPaymentIntentAmount] = useState<number | null>(null);
+
   useEffect(() => {
     let ignore = false
     async function createIntent() {
       if (!amount || amount <= 0) {
         console.log('Stripe: Invalid amount', amount)
+        setClientSecret(null)
+        setPaymentIntentAmount(null)
+        return
+      }
+      
+      // Only recreate payment intent if amount has changed significantly
+      const amountChanged = paymentIntentAmount === null || Math.abs(paymentIntentAmount - amount) > 0.01;
+      
+      if (clientSecret && !amountChanged) {
+        console.log('Stripe: Using existing payment intent for amount:', amount)
         return
       }
       
@@ -83,7 +96,10 @@ export default function StripePaymentComponent({
         const data = await res.json()
         console.log('Stripe: Payment intent created:', data.clientSecret ? 'Success' : 'No client secret')
         
-        if (!ignore) setClientSecret(data.clientSecret)
+        if (!ignore) {
+          setClientSecret(data.clientSecret)
+          setPaymentIntentAmount(amount)
+        }
       } catch (err: any) {
         console.error('Stripe: Error creating payment intent:', err)
         if (!ignore) setError(err.message || 'Error creating payment session')
@@ -93,7 +109,7 @@ export default function StripePaymentComponent({
     }
     createIntent()
     return () => { ignore = true }
-  }, [amount, currency, items])
+  }, [amount, currency, clientSecret, paymentIntentAmount]) // Include all dependencies but with logic to prevent excessive calls
 
   const options = useMemo(() => (
     clientSecret

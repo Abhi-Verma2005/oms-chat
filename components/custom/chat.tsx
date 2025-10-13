@@ -11,6 +11,7 @@ import { MultimodalInput } from "./multimodal-input";
 import { Overview } from "./overview";
 import { RightPanel } from "./RightPanel";
 import { useScrollToBottom } from "./use-scroll-to-bottom";
+import { useCart } from "../../contexts/cart-context";
 import { useSplitScreen } from "../../contexts/SplitScreenProvider";
 import { useUserInfo } from "../../contexts/UserInfoProvider";
 
@@ -24,6 +25,7 @@ export function Chat({
   user?: any;
 }) {
   const { userInfo } = useUserInfo();
+  const { state: cartState } = useCart();
   
   const { messages, handleSubmit, input, setInput, append, isLoading, stop, reload } =
     useChat({
@@ -36,7 +38,8 @@ export function Chat({
           name: userInfo.name,
           preferences: userInfo.preferences,
           chatHistory: userInfo.chatHistory,
-        } : null
+        } : null,
+        cartState: cartState.items.length > 0 ? cartState.items : undefined
       },
       initialMessages,
       maxSteps: 10,
@@ -51,7 +54,7 @@ export function Chat({
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const { isRightPanelOpen, rightPanelWidth, setRightPanelWidth } = useSplitScreen();
   const [isResizing, setIsResizing] = useState(false);
-  const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(false);
+  const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(true);
   const containerRef = useRef<HTMLDivElement>(null);
 
   // Handle mouse move for resizing
@@ -111,7 +114,16 @@ export function Chat({
         />
       </div>
 
-      {/* Main Chat Area - Always full width */}
+      {/* Backdrop for sidebar when expanded */}
+      {!isLeftSidebarCollapsed && (
+        <div 
+          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-10"
+          onClick={() => {
+            setIsLeftSidebarCollapsed(true);
+          }}
+        />
+      )}
+
       <div 
         className={`flex flex-col justify-center pb-4 md:pb-8 transition-all duration-300 w-full ${
           isRightPanelOpen ? 'mr-0' : ''
@@ -123,9 +135,6 @@ export function Chat({
       >
         <div 
           className="flex flex-col justify-between items-center gap-4 h-full"
-          style={{
-            paddingLeft: isLeftSidebarCollapsed ? '0' : '256px' // 256px = w-64 (16rem)
-          }}
         >
           <div
             ref={messagesContainerRef}
@@ -144,6 +153,7 @@ export function Chat({
                 onRegenerate={handleRegenerate}
                 isLastMessage={index === messages.length - 1}
                 isGenerating={isLoading && index === messages.length - 1}
+                onAppendMessage={append}
               />
             ))}
 

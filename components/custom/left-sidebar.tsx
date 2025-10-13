@@ -24,7 +24,7 @@ interface LeftSidebarProps {
 }
 
 export function LeftSidebar({ user, onCollapseChange }: LeftSidebarProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isCollapsed, setIsCollapsed] = useState(true);
 
   const handleToggleCollapse = () => {
     const newCollapsed = !isCollapsed;
@@ -33,7 +33,7 @@ export function LeftSidebar({ user, onCollapseChange }: LeftSidebarProps) {
   };
 
   return (
-    <div className={`flex flex-col h-screen bg-card border-r border-border transition-all duration-300 ${
+    <div className={`flex flex-col h-screen bg-card border-r border-border transition-all duration-300 z-30 ${
       isCollapsed ? 'w-16' : 'w-64'
     }`}>
       {/* Top Section - Logo & App Name + Toggle Button (20%) */}
@@ -110,7 +110,7 @@ export function LeftSidebar({ user, onCollapseChange }: LeftSidebarProps) {
                       variant="secondary"
                     >
                       <div className="flex items-center space-x-2 w-full">
-                        <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                        <div className="size-6 bg-purple-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
                           {user.email?.charAt(0).toUpperCase()}
                         </div>
                         <span className="truncate flex-1">{user.email}</span>
@@ -120,7 +120,7 @@ export function LeftSidebar({ user, onCollapseChange }: LeftSidebarProps) {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="w-8 h-8 p-0 rounded-full bg-purple-500 hover:bg-purple-600 text-white cursor-pointer"
+                      className="size-8 p-0 rounded-full bg-purple-500 hover:bg-purple-600 text-white cursor-pointer"
                     >
                       {user.email?.charAt(0).toUpperCase()}
                     </Button>
@@ -149,7 +149,7 @@ export function LeftSidebar({ user, onCollapseChange }: LeftSidebarProps) {
             </>
           ) : (
             <Button 
-              className={`w-full py-2 px-3 h-fit font-normal bg-primary hover:bg-primary/90 text-primary-foreground ${isCollapsed ? 'w-8 h-8 p-0' : ''}`} 
+              className={`w-full py-2 px-3 h-fit font-normal bg-primary hover:bg-primary/90 text-primary-foreground ${isCollapsed ? 'size-8 p-0' : ''}`} 
               asChild
             >
               <Link href="/login">

@@ -91,13 +91,20 @@ export default function CartManagementResults({
   const { cartData, message } = data
   const { state: contextCartState, removeItem: contextRemoveItem, updateQuantity: contextUpdateQuantity, clearCart: contextClearCart } = useCart()
   
-  // Use context cart data if available, otherwise fall back to AI cart data
-  const displayCartData = contextCartState.items.length > 0 ? {
+  // Always use context cart data for display and operations
+  const displayCartData = {
     items: contextCartState.items,
     totalItems: contextCartState.items.reduce((sum, item) => sum + item.quantity, 0),
     totalPrice: contextCartState.items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
     lastUpdated: new Date()
-  } : cartData
+  }
+
+  // Debug logging
+  console.log('Cart state debug:', {
+    contextCartState: contextCartState.items,
+    displayCartData: displayCartData.items,
+    cartData: cartData.items
+  })
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -116,138 +123,205 @@ export default function CartManagementResults({
   }
 
   const handleQuantityChange = (itemId: string, newQuantity: number) => {
+    console.log('Quantity change requested:', { itemId, newQuantity })
+    console.log('Current context cart state:', contextCartState.items)
+    console.log('Available context functions:', { contextRemoveItem, contextUpdateQuantity })
+    
     if (newQuantity < 1) {
+      console.log('Removing item due to quantity < 1')
       contextRemoveItem(itemId)
     } else {
+      console.log('Updating quantity')
       contextUpdateQuantity(itemId, newQuantity)
     }
   }
   
   const handleRemoveItem = (itemId: string) => {
+    console.log('Remove item requested:', itemId)
     contextRemoveItem(itemId)
   }
   
   const handleClearCart = () => {
+    console.log('Clear cart requested')
     contextClearCart()
   }
 
   return (
-    <div className="space-y-4">
-      {/* Success Message */}
-      {data.success && (
-        <div className="flex items-center space-x-2 p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-          <CheckCircle className="h-5 w-5 text-green-600 dark:text-green-400" />
-          <span className="text-green-800 dark:text-green-200 text-sm font-medium">
-            {message}
-          </span>
-        </div>
-      )}
-
+    <div className="space-y-4 p-6">
       {/* Cart Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">
+        <h3 className="text-xl font-semibold text-foreground">
           Cart ({displayCartData.totalItems})
         </h3>
         
-        {displayCartData.items.length > 0 && (
+        <div className="flex items-center gap-2">
+          {/* Test button to check if context functions work */}
           <Button
             variant="outline"
             size="sm"
-            onClick={handleClearCart}
-            className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20"
+            onClick={(e) => {
+              e.stopPropagation()
+              console.log('Test button clicked - context functions:', { contextRemoveItem, contextUpdateQuantity, contextClearCart })
+              console.log('Current context state:', contextCartState)
+            }}
+            className="text-xs"
           >
-            <Trash2 className="h-4 w-4" />
+            Test
           </Button>
-        )}
+          
+          {displayCartData.items.length > 0 && (
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={(e) => {
+                e.stopPropagation()
+                handleClearCart()
+              }}
+              className="text-muted-foreground hover:text-destructive"
+              title="Clear cart"
+            >
+              <Trash2 className="size-4" />
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Cart Items */}
       {displayCartData.items.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          <ShoppingCart className="h-8 w-8 mx-auto mb-2" />
-          <p>Your cart is empty</p>
-        </div>
+        <Card className="p-8">
+          <div className="text-center text-muted-foreground">
+            <ShoppingCart className="size-12 mx-auto mb-4 opacity-50" />
+            <p className="text-sm font-medium">Your cart is empty</p>
+            <p className="text-xs mt-1">Add publishers to get started</p>
+          </div>
+        </Card>
       ) : (
-        <div className="space-y-2">
+        <div className="space-y-3">
           {displayCartData.items.map((item) => (
-            <div key={item.id} className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800/50 rounded-lg">
-              <div className="flex items-center space-x-3 flex-1">
-                <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center">
-                  <span className="text-blue-600 dark:text-blue-400 font-semibold text-xs">P</span>
+            <Card key={item.id} className="p-4">
+              <div className="flex items-center gap-4">
+                {/* Item Info */}
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className="size-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
+                    <span className="text-primary font-semibold text-sm">P</span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <h4 className="font-medium text-foreground truncate">
+                      {item.name}
+                    </h4>
+                    {item.metadata?.dr && (
+                      <div className="flex items-center gap-2 mt-1">
+                        <span className="text-xs text-muted-foreground">
+                          DR {item.metadata.dr}
+                        </span>
+                        {item.metadata.da && (
+                          <>
+                            <span className="text-xs text-muted-foreground">•</span>
+                            <span className="text-xs text-muted-foreground">
+                              DA {item.metadata.da}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    )}
+                  </div>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate text-xs">
-                    {item.name}
-                  </h4>
-                  {item.metadata?.dr && (
-                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                      DR {item.metadata.dr}
+
+                {/* Controls */}
+                <div className="flex items-center gap-3">
+                  {/* Quantity Controls */}
+                  <div className="flex items-center gap-1">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleQuantityChange(item.id, item.quantity - 1)
+                      }}
+                      className="size-8"
+                    >
+                      <Minus className="size-3" />
+                    </Button>
+                    
+                    <span className="text-sm font-medium w-8 text-center">
+                      {item.quantity}
                     </span>
-                  )}
+                    
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      onClick={(e) => {
+                        e.stopPropagation()
+                        handleQuantityChange(item.id, item.quantity + 1)
+                      }}
+                      className="size-8"
+                    >
+                      <Plus className="size-3" />
+                    </Button>
+                  </div>
+
+                  {/* Price */}
+                  <div className="font-semibold text-foreground text-sm min-w-[70px] text-right">
+                    {formatPrice(item.price * item.quantity)}
+                  </div>
+
+                  {/* Remove Button */}
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      handleRemoveItem(item.id)
+                    }}
+                    className="size-8 text-muted-foreground hover:text-destructive"
+                    title="Remove item"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
                 </div>
               </div>
-
-              <div className="flex items-center space-x-3">
-                <div className="flex items-center space-x-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuantityChange(item.id, item.quantity - 1)}
-                    className="h-6 w-6 p-0"
-                  >
-                    <Minus className="h-3 w-3" />
-                  </Button>
-                  
-                  <span className="text-sm font-medium w-6 text-center">
-                    {item.quantity}
-                  </span>
-                  
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => handleQuantityChange(item.id, item.quantity + 1)}
-                    className="h-6 w-6 p-0"
-                  >
-                    <Plus className="h-3 w-3" />
-                  </Button>
-                </div>
-
-                <div className="font-semibold text-gray-900 dark:text-gray-100 text-xs">
-                  {formatPrice(item.price * item.quantity)}
-                </div>
-
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => handleRemoveItem(item.id)}
-                  className="text-red-600 hover:text-red-700 hover:bg-red-50 dark:text-red-400 dark:hover:text-red-300 dark:hover:bg-red-900/20 h-6 w-6 p-0"
-                >
-                  <Trash2 className="h-3 w-3" />
-                </Button>
-              </div>
-            </div>
+            </Card>
           ))}
         </div>
       )}
 
       {/* Checkout Section */}
       {displayCartData.items.length > 0 && (
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-          <div className="flex items-center justify-between mb-3">
-            <span className="text-sm text-gray-600 dark:text-gray-400">Total</span>
-            <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
-              {formatPrice(displayCartData.totalPrice * 1.08)}
-            </span>
-          </div>
+        <Card className="p-4">
+          <div className="space-y-4">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Subtotal</span>
+              <span className="text-sm text-foreground">
+                {formatPrice(displayCartData.totalPrice)}
+              </span>
+            </div>
+            
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-medium text-muted-foreground">Tax (8%)</span>
+              <span className="text-sm text-foreground">
+                {formatPrice(displayCartData.totalPrice * 0.08)}
+              </span>
+            </div>
+            
+            <div className="border-t border-border pt-3">
+              <div className="flex items-center justify-between">
+                <span className="text-base font-semibold text-foreground">Total</span>
+                <span className="text-lg font-bold text-foreground">
+                  {formatPrice(displayCartData.totalPrice * 1.08)}
+                </span>
+              </div>
+            </div>
 
-          <Button
-            onClick={onDoneAddingToCart || (() => {})}
-            className="w-full bg-violet-600 hover:bg-violet-700 text-white"
-          >
-            <CheckCircle className="h-4 w-4 mr-2" />
-            Proceed to Checkout
-          </Button>
-        </div>
+            <Button
+              onClick={onDoneAddingToCart || (() => {})}
+              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+              size="lg"
+            >
+              <CheckCircle className="size-4" />
+              Proceed to Checkout
+            </Button>
+          </div>
+        </Card>
       )}
     </div>
   )

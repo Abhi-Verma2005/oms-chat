@@ -11,7 +11,9 @@ import {
   clearCart,
   updateCartItemQuantity,
   displayOrdersFunction,
+  collectPublisherFilters,
 } from "../../../../ai/actions";
+import { createExecutionPlan, updatePlanProgress } from "../../../../ai/actions/plan-management";
 import { auth } from "../../../../app/(auth)/auth";
 import {
   deleteChatById,
@@ -21,7 +23,7 @@ import {
 import { generateUUID } from "../../../../lib/utils";
 
 export async function POST(request: Request) {
-  const { id, messages, userInfo }: { 
+  const { id, messages, userInfo, cartState }: { 
     id: string; 
     messages: Array<Message>;
     userInfo?: {
@@ -39,6 +41,21 @@ export async function POST(request: Request) {
         lastActive: string;
       };
     } | null;
+    cartState?: Array<{
+      id: string;
+      type: "publisher" | "product";
+      name: string;
+      price: number;
+      quantity: number;
+      addedAt: string;
+      metadata?: {
+        publisherId?: string;
+        website?: string;
+        niche?: string[];
+        dr?: number;
+        da?: number;
+      };
+    }>;
   } = await request.json();
 
   const session = await auth();
@@ -80,10 +97,20 @@ export async function POST(request: Request) {
           - end with a brief Next steps section when appropriate
           - use emojis strategically to enhance readability and engagement: ✅ for success/completion, 📌 for important points, 💡 for tips/insights, 📊 for data/metrics, 🧭 for guidance/next steps, 🎯 for goals/targets, 🔍 for search/analysis, ⚡ for quick actions, 🚀 for getting started, 💰 for pricing, 🌟 for recommendations, 📝 for notes, ⚠️ for warnings, 🎉 for celebrations
         - after every tool call, show the results to the user in a clear format.
+        - when browsePublishers tool is called, provide a CONCISE summary instead of listing all publishers:
+          - Say something like "I've found X publishers matching your criteria" 
+          - Highlight key stats (avg DR, DA, price range)
+          - Mention any filters applied
+          - Tell user to "Click the results card to view all publishers and add them to your cart"
+          - DO NOT list individual publishers in your response - the detailed table is shown in the right panel
         - today's date is ${new Date().toLocaleDateString()}.
         - ask follow up questions to help users find the right publishers for their needs.
         - help users understand publisher metrics like DR (Domain Rating), DA (Domain Authority), and spam scores.
         - here's the optimal flow for publisher discovery:
+          - when users ask to browse publishers without filters, use collectPublisherFilters tool to guide them through setting up price and DR/DA ranges
+          - collectPublisherFilters tool shows interactive modals in chat - use it to collect user preferences step by step
+          - after user sets price range, continue with DR/DA range collection
+          - after user sets DR/DA ranges, proceed to browse publishers with all collected filters
           - browse publishers with optional filters (niche, country, DR range, type)
           - search for specific publishers or niches
           - view detailed publisher information
@@ -100,6 +127,18 @@ export async function POST(request: Request) {
           - Outbound Links: Number of external links on the page
         - when a user mentions a successful payment, acknowledge it enthusiastically and provide helpful next steps for their backlinking campaign
         - for successful payments, suggest next actions like content creation, outreach strategies, or campaign planning
+        - CRITICAL: For ANY request involving publisher browsing, filtering, cart operations, or multi-step workflows, you MUST FIRST call createExecutionPlan tool to create a structured plan
+        - Examples that REQUIRE planning: "browse publishers", "find publishers with filters", "browse publishers for backlink opportunities", "add publishers to cart", "complete purchase flow", "apply filters in detail", "set up filters", "configure search parameters"
+        - Simple, single-step requests (like "show my cart" or "get weather") can be handled directly without planning
+        - NEVER skip planning for publisher-related requests - always create an execution plan first
+        - If user wants to modify or refine their search/filters, create a NEW plan for the updated requirements
+        - IMPORTANT: After completing ANY tool execution that's part of an execution plan, you MUST call updatePlanProgress to mark that step as completed
+        - When users complete filter collection steps (price range, DR/DA ranges), always:
+          1. Acknowledge what they've set (e.g., "Great! I see you've set your price range to $200-$1000")
+          2. Call the collectPublisherFilters tool to continue the next step
+          3. Call updatePlanProgress to mark the step as completed
+          4. Be encouraging and explain what's happening next
+        - When users say they've set filters, immediately use collectPublisherFilters tool with their current filters to continue the flow
         `;
 
     if (!userInfo) {
@@ -135,6 +174,20 @@ export async function POST(request: Request) {
     system: generateSystemPrompt(userInfo || null),
     messages: coreMessages,
     tools: {
+      createExecutionPlan: {
+        description: "Create an execution plan for complex user requests that require multiple steps (like browsing publishers with filters, adding items to cart, processing payments). Use this FIRST for multi-step workflows before calling individual tools.",
+        parameters: z.object({
+          userRequest: z.string().describe("The user's request"),
+          context: z.any().describe("Current context (cart, filters, etc.)")
+        }),
+        execute: async ({ userRequest, context }) => {
+          return await createExecutionPlan({
+            chatId: id,
+            userRequest,
+            context: { userInfo, cartState, ...context }
+          });
+        }
+      },
       getWeather: {
         description: "Get the current weather at a location",
         parameters: z.object({
@@ -229,7 +282,7 @@ export async function POST(request: Request) {
         description: "View the current contents of the shopping cart",
         parameters: z.object({}),
         execute: async () => {
-          const result = await viewCart();
+          const result = await viewCart(cartState);
           return result;
         },
       },
@@ -271,6 +324,43 @@ export async function POST(request: Request) {
             items: cartItems,
           };
         },
+      },
+      collectPublisherFilters: {
+        description: "Collect filters from user through interactive modals before browsing publishers. This tool shows modals in chat for better UX. Usually called as part of an execution plan.",
+        parameters: z.object({
+          step: z.enum(["price", "dr", "complete"]).optional().describe("Current step in filter collection"),
+          userInput: z.string().optional().describe("User input or response to previous modal"),
+          currentFilters: z.object({
+            priceRange: z.object({
+              min: z.number().optional(),
+              max: z.number().optional()
+            }).optional(),
+            drRange: z.object({
+              minDR: z.number().optional(),
+              maxDR: z.number().optional(),
+              minDA: z.number().optional(),
+              maxDA: z.number().optional()
+            }).optional()
+          }).optional().describe("Filters collected so far"),
+        }),
+        execute: async ({ step, userInput, currentFilters }) => {
+          const result = await collectPublisherFilters({ step, userInput, currentFilters });
+          return {
+            ...result,
+            show_in_chat: true // This tells the message component to show modals in chat instead of sidebar
+          };
+        },
+      },
+      updatePlanProgress: {
+        description: "Update plan progress after completing a step. Call this IMMEDIATELY after each tool execution that's part of an execution plan to mark the step as completed.",
+        parameters: z.object({
+          planId: z.string().describe("Plan ID"),
+          stepIndex: z.number().describe("Completed step index"),
+          stepResult: z.any().describe("Result of the step")
+        }),
+        execute: async ({ planId, stepIndex, stepResult }) => {
+          return await updatePlanProgress({ planId, stepIndex, stepResult });
+        }
       },
     },
     onFinish: async ({ responseMessages }) => {

@@ -212,3 +212,111 @@
         @apply bg-foreground/20 animate-pulse;
     }
 }
+
+/* Custom slider styling for filter modals */
+.slider {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+}
+
+.slider::-webkit-slider-track {
+  background: hsl(var(--muted));
+  height: 8px;
+  border-radius: 4px;
+}
+
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: hsl(var(--primary));
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid hsl(var(--background));
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.slider::-webkit-slider-thumb:hover {
+  background: hsl(var(--primary) / 0.9);
+  transform: scale(1.1);
+}
+
+.slider::-moz-range-track {
+  background: hsl(var(--muted));
+  height: 8px;
+  border-radius: 4px;
+  border: none;
+}
+
+.slider::-moz-range-thumb {
+  background: hsl(var(--primary));
+  height: 20px;
+  width: 20px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid hsl(var(--background));
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.slider::-moz-range-thumb:hover {
+  background: hsl(var(--primary) / 0.9);
+  transform: scale(1.1);
+}
+
+/* Enhanced slider with visible track */
+.slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 8px;
+}
+
+.slider-thumb::-webkit-slider-track {
+  background: #e5e7eb;
+  height: 6px; /* slightly slimmer track */
+  border-radius: 9999px;
+}
+
+.slider-thumb::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  background: hsl(var(--primary) / 0.8); /* softer color */
+  height: 16px; /* smaller knob */
+  width: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18); /* lighter shadow */
+  margin-top: -5px; /* align with slimmer track */
+}
+
+.slider-thumb::-webkit-slider-thumb:hover {
+  background: hsl(var(--primary));
+  transform: scale(1.05);
+}
+
+.slider-thumb::-moz-range-track {
+  background: #e5e7eb;
+  height: 6px;
+  border-radius: 9999px;
+  border: none;
+}
+
+.slider-thumb::-moz-range-thumb {
+  background: hsl(var(--primary) / 0.8);
+  height: 16px;
+  width: 16px;
+  border-radius: 50%;
+  cursor: pointer;
+  border: 2px solid #ffffff;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+}
+
+.slider-thumb::-moz-range-thumb:hover {
+  background: hsl(var(--primary));
+  transform: scale(1.05);
+}

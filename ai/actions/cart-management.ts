@@ -27,9 +27,6 @@ export interface CartData {
   lastUpdated: Date;
 }
 
-// In-memory cart storage (in production, this would be in a database)
-let cartStorage: CartItem[] = [];
-
 // Helper function to generate cart ID
 function generateCartId(): string {
   return `cart_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -40,6 +37,19 @@ function calculateTotals(items: CartItem[]) {
   const totalItems = items.reduce((sum, item) => sum + item.quantity, 0);
   const totalPrice = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
   return { totalItems, totalPrice };
+}
+
+// Global cart state that can be accessed by AI actions
+let globalCartState: CartItem[] = [];
+
+// Function to sync cart state from client
+export function syncCartState(items: CartItem[]) {
+  globalCartState = [...items];
+}
+
+// Function to get current cart state
+export function getCurrentCartState(): CartItem[] {
+  return [...globalCartState];
 }
 
 export async function addToCart({
@@ -62,8 +72,11 @@ export async function addToCart({
   };
 }) {
   try {
+    // Use current global cart state
+    const currentCart = getCurrentCartState();
+    
     // Check if item already exists in cart
-    const existingItemIndex = cartStorage.findIndex(
+    const existingItemIndex = currentCart.findIndex(
       item => item.name === name && item.type === type
     );
 
@@ -71,7 +84,7 @@ export async function addToCart({
 
     if (existingItemIndex >= 0) {
       // Update existing item quantity
-      updatedItems = [...cartStorage];
+      updatedItems = [...currentCart];
       updatedItems[existingItemIndex] = {
         ...updatedItems[existingItemIndex],
         quantity: updatedItems[existingItemIndex].quantity + quantity,
@@ -88,11 +101,12 @@ export async function addToCart({
         addedAt: new Date(),
         metadata
       };
-      updatedItems = [...cartStorage, newItem];
+      updatedItems = [...currentCart, newItem];
     }
 
-    cartStorage = updatedItems;
-    const totals = calculateTotals(cartStorage);
+    // Update global cart state
+    globalCartState = updatedItems;
+    const totals = calculateTotals(updatedItems);
 
     // Generate AI response
     const { object: response } = await generateObject({
@@ -115,7 +129,7 @@ export async function addToCart({
       message: response.message,
       cartSummary: response.cartSummary,
       cartData: {
-        items: cartStorage,
+        items: updatedItems,
         ...totals,
         lastUpdated: new Date()
       }
@@ -136,7 +150,9 @@ export async function removeFromCart({
   itemId: string;
 }) {
   try {
-    const itemIndex = cartStorage.findIndex(item => item.id === itemId);
+    // Use current global cart state
+    const currentCart = getCurrentCartState();
+    const itemIndex = currentCart.findIndex(item => item.id === itemId);
     
     if (itemIndex === -1) {
       return {
@@ -145,9 +161,12 @@ export async function removeFromCart({
       };
     }
 
-    const removedItem = cartStorage[itemIndex];
-    cartStorage = cartStorage.filter(item => item.id !== itemId);
-    const totals = calculateTotals(cartStorage);
+    const removedItem = currentCart[itemIndex];
+    const updatedItems = currentCart.filter(item => item.id !== itemId);
+    
+    // Update global cart state
+    globalCartState = updatedItems;
+    const totals = calculateTotals(updatedItems);
 
     // Generate AI response
     const { object: response } = await generateObject({
@@ -168,7 +187,7 @@ export async function removeFromCart({
       message: response.message,
       removedItem: response.removedItem,
       cartData: {
-        items: cartStorage,
+        items: updatedItems,
         ...totals,
         lastUpdated: new Date()
       }
@@ -183,14 +202,41 @@ export async function removeFromCart({
   }
 }
 
-export async function viewCart() {
+export async function viewCart(clientCartState?: Array<{
+  id: string;
+  type: "publisher" | "product";
+  name: string;
+  price: number;
+  quantity: number;
+  addedAt: string;
+  metadata?: {
+    publisherId?: string;
+    website?: string;
+    niche?: string[];
+    dr?: number;
+    da?: number;
+  };
+}>) {
   try {
-    const totals = calculateTotals(cartStorage);
+    let currentCart: CartItem[] = [];
+    
+    // If client cart state is provided, use it (server-side with client data)
+    if (clientCartState && clientCartState.length > 0) {
+      currentCart = clientCartState.map(item => ({
+        ...item,
+        addedAt: new Date(item.addedAt)
+      }));
+    } else {
+      // Fall back to global cart state
+      currentCart = getCurrentCartState();
+    }
+    
+    const totals = calculateTotals(currentCart);
 
     // Generate AI response
     const { object: response } = await generateObject({
       model: openaiFlashModel,
-      prompt: `Generate a summary of the shopping cart with ${cartStorage.length} items, totaling ${totals.totalItems} units and $${totals.totalPrice.toFixed(2)}. Include a brief description of each item.`,
+      prompt: `Generate a summary of the shopping cart with ${currentCart.length} items, totaling ${totals.totalItems} units and $${totals.totalPrice.toFixed(2)}. Include a brief description of each item.`,
       schema: z.object({
         message: z.string().describe("Friendly cart summary message"),
         summary: z.object({
@@ -215,7 +261,7 @@ export async function viewCart() {
       summary: response.summary,
       itemDescriptions: response.itemDescriptions,
       cartData: {
-        items: cartStorage,
+        items: currentCart,
         ...totals,
         lastUpdated: new Date()
       }
@@ -232,8 +278,12 @@ export async function viewCart() {
 
 export async function clearCart() {
   try {
-    const itemCount = cartStorage.length;
-    cartStorage = [];
+    // Use current global cart state
+    const currentCart = getCurrentCartState();
+    const itemCount = currentCart.length;
+    
+    // Clear global cart state
+    globalCartState = [];
 
     // Generate AI response
     const { object: response } = await generateObject({
@@ -274,7 +324,9 @@ export async function updateCartItemQuantity({
   quantity: number;
 }) {
   try {
-    const itemIndex = cartStorage.findIndex(item => item.id === itemId);
+    // Use current global cart state
+    const currentCart = getCurrentCartState();
+    const itemIndex = currentCart.findIndex(item => item.id === itemId);
     
     if (itemIndex === -1) {
       return {
@@ -288,18 +340,24 @@ export async function updateCartItemQuantity({
       return await removeFromCart({ itemId });
     }
 
-    cartStorage[itemIndex] = {
-      ...cartStorage[itemIndex],
+    const updatedItems = [...currentCart];
+    const oldQuantity = updatedItems[itemIndex].quantity;
+    
+    updatedItems[itemIndex] = {
+      ...updatedItems[itemIndex],
       quantity,
       addedAt: new Date()
     };
 
-    const totals = calculateTotals(cartStorage);
+    // Update global cart state
+    globalCartState = updatedItems;
+
+    const totals = calculateTotals(updatedItems);
 
     // Generate AI response
     const { object: response } = await generateObject({
       model: openaiFlashModel,
-      prompt: `Generate a confirmation message for updating the quantity of "${cartStorage[itemIndex].name}" to ${quantity}. The cart now has ${totals.totalItems} items totaling $${totals.totalPrice.toFixed(2)}.`,
+      prompt: `Generate a confirmation message for updating the quantity of "${updatedItems[itemIndex].name}" from ${oldQuantity} to ${quantity}. The cart now has ${totals.totalItems} items totaling $${totals.totalPrice.toFixed(2)}.`,
       schema: z.object({
         message: z.string().describe("Friendly confirmation message"),
         updatedItem: z.object({
@@ -316,7 +374,7 @@ export async function updateCartItemQuantity({
       message: response.message,
       updatedItem: response.updatedItem,
       cartData: {
-        items: cartStorage,
+        items: updatedItems,
         ...totals,
         lastUpdated: new Date()
       }

@@ -21,7 +21,6 @@ export function usePlanExecution(chatId: string, append: (message: Message) => v
   const [isExecuting, setIsExecuting] = useState(false);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
   const [retryCount, setRetryCount] = useState(0);
-  const [hasStarted, setHasStarted] = useState(false);
 
   // Fetch active plan
   const fetchActivePlan = useCallback(async () => {
@@ -49,15 +48,10 @@ export function usePlanExecution(chatId: string, append: (message: Message) => v
     setRetryCount(0);
   }, [activePlan?.id]);
 
-  // Manual start function
-  const startExecution = useCallback(() => {
-    setHasStarted(true);
-    // Note: isPaused is controlled by parent component, not this hook
-  }, []);
 
-  // Execute next step (only works after manual start)
+  // Execute next step (automatically when plan is ready)
   const executeNextStep = useCallback(async () => {
-    if (!activePlan || isExecuting || isPaused || !hasStarted) return;
+    if (!activePlan || isExecuting || isPaused) return;
     
     const currentStep = activePlan.steps[currentStepIndex];
     if (!currentStep || currentStep.status === 'completed') return;
@@ -92,11 +86,11 @@ export function usePlanExecution(chatId: string, append: (message: Message) => v
       console.error('Step execution failed:', error);
       setIsExecuting(false);
     }
-  }, [activePlan, currentStepIndex, isExecuting, isPaused, hasStarted, retryCount, append, fetchActivePlan]);
+  }, [activePlan, currentStepIndex, isExecuting, isPaused, retryCount, append, fetchActivePlan]);
 
-  // Auto-execute after manual start (only for non-user-input steps)
+  // Auto-execute when plan is ready (no manual start required)
   useEffect(() => {
-    if (activePlan && !isExecuting && !isPaused && hasStarted && currentStepIndex < activePlan.totalSteps) {
+    if (activePlan && !isExecuting && !isPaused && currentStepIndex < activePlan.totalSteps) {
       const currentStep = activePlan.steps[currentStepIndex];
       
       // Check if step requires user input
@@ -105,22 +99,20 @@ export function usePlanExecution(chatId: string, append: (message: Message) => v
         return;
       }
       
-      // Auto-execute next step after manual start
+      // Auto-execute next step automatically when plan is ready
       const timer = setTimeout(() => {
         executeNextStep();
       }, 500);
       
       return () => clearTimeout(timer);
     }
-  }, [activePlan, currentStepIndex, isExecuting, isPaused, hasStarted, executeNextStep]);
+  }, [activePlan, currentStepIndex, isExecuting, isPaused, executeNextStep]);
 
   return {
     activePlan,
     isExecuting,
     currentStepIndex,
-    hasStarted,
     fetchActivePlan,
-    executeNextStep,
-    startExecution
+    executeNextStep
   };
 }

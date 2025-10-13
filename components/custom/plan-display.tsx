@@ -1,5 +1,5 @@
 
-import { Loader2, CheckCircle, Circle, ChevronDown, Square } from 'lucide-react';
+import { Loader2, CheckCircle, Circle, Square } from 'lucide-react';
 import { useState, useEffect } from 'react';
 
 import { usePlanExecution } from '@/hooks/usePlanExecution';
@@ -29,8 +29,7 @@ export function PlanDisplay({
   initialPlan?: Plan | null;
 }) {
   const [isPaused, setIsPaused] = useState(false);
-  const { activePlan, isExecuting, currentStepIndex, hasStarted, startExecution } = usePlanExecution(chatId, append, isPaused);
-  const [isExpanded, setIsExpanded] = useState(true);
+  const { activePlan, isExecuting, currentStepIndex } = usePlanExecution(chatId, append, isPaused);
   const [showContent, setShowContent] = useState(false);
 
   // Use initialPlan if provided, otherwise use activePlan from hook
@@ -96,22 +95,8 @@ export function PlanDisplay({
               </span>
             </div>
             <div className="flex items-center gap-2">
-              {/* Start Plan Button */}
-              {!hasStarted && !isExecuting && (
-                <button
-                  onClick={() => {
-                    startExecution();
-                    setIsPaused(false); // Reset pause state when starting
-                  }}
-                  className="flex items-center gap-1 px-3 py-1 text-xs bg-ui-teal/10 text-ui-teal rounded-md hover:bg-ui-teal/20 transition-colors font-medium"
-                  title="Start plan execution"
-                >
-                  ▶️
-                  Start Plan
-                </button>
-              )}
               {/* Stop/Pause Button */}
-              {isExecuting && !isPaused && hasStarted && (
+              {isExecuting && !isPaused && (
                 <button
                   onClick={() => setIsPaused(true)}
                   className="flex items-center gap-1 px-2 py-1 text-xs bg-red-500/10 text-red-500 rounded-md hover:bg-red-500/20 transition-colors"
@@ -122,7 +107,7 @@ export function PlanDisplay({
                 </button>
               )}
               {/* Resume Button */}
-              {isPaused && hasStarted && (
+              {isPaused && (
                 <button
                   onClick={() => setIsPaused(false)}
                   className="flex items-center gap-1 px-2 py-1 text-xs bg-green-500/10 text-green-500 rounded-md hover:bg-green-500/20 transition-colors"
@@ -132,18 +117,11 @@ export function PlanDisplay({
                   Resume
                 </button>
               )}
-              <button
-                onClick={() => setIsExpanded(!isExpanded)}
-                className="text-muted-foreground hover:text-foreground transition-colors"
-              >
-                <ChevronDown className={`size-4 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-              </button>
             </div>
           </div>
 
           {/* Steps list */}
-          {isExpanded && (
-            <div className="space-y-1">
+          <div className="space-y-1">
               {(currentPlan.steps || []).map((step: any, index: number) => (
                 <div key={step.id} className={`flex items-start gap-3 py-2 transition-all duration-300 ${
                   step.status === 'executing' ? 'bg-ui-teal/10 rounded-md px-2 -mx-2' : ''
@@ -180,10 +158,9 @@ export function PlanDisplay({
                 </div>
               ))}
             </div>
-          )}
 
           {/* Progress indicator */}
-          {isExecuting && !isPaused && hasStarted && (
+          {isExecuting && !isPaused && (
             <div className="mt-3 pt-3 border-t border-border">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="size-3 animate-spin" />
@@ -193,7 +170,7 @@ export function PlanDisplay({
           )}
           
           {/* Paused indicator */}
-          {isPaused && hasStarted && (
+          {isPaused && (
             <div className="mt-3 pt-3 border-t border-border">
               <div className="flex items-center gap-2 text-sm text-yellow-500">
                 ⏸️ Execution paused at step {currentStepIndex + 1} of {totalSteps}
@@ -201,23 +178,6 @@ export function PlanDisplay({
             </div>
           )}
 
-          {/* Ready to start indicator */}
-          {!hasStarted && !isExecuting && (
-            <div className="mt-3 pt-3 border-t border-border">
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                📋 Plan ready - Click &quot;Start Plan&quot; to begin execution
-              </div>
-            </div>
-          )}
-
-          {/* Completion message */}
-          {currentPlan.status === 'completed' && (
-            <div className="mt-3 pt-3 border-t border-border">
-              <div className="text-sm text-green-500 font-medium">
-                ✓ All steps completed successfully
-              </div>
-            </div>
-          )}
         </div>
       )}
     </div>

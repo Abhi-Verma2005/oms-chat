@@ -20,6 +20,106 @@ import { PublishersResults } from "../publishers/publishers-results";
 import { DRRangeEmbed } from "../ui/dr-range-embed";
 import { PriceRangeEmbed } from "../ui/price-range-embed";
 
+// Checkout Preview Component
+function CheckoutPreview({ result, showInRightPanel }: { result: any; showInRightPanel: (toolName: string, result: any) => void }) {
+  const { state: cartState } = useCart();
+  
+  // Use live cart data instead of result data for real-time updates
+  const totalItems = cartState.items.reduce((sum, item) => sum + item.quantity, 0);
+  const totalPrice = cartState.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+  
+  // Memoize the items array to prevent unnecessary re-renders and payment intent recreations
+  const stripeItems = useMemo(() => 
+    cartState.items.map((item: any) => ({
+      id: item.id,
+      name: item.name,
+      price: item.price,
+      quantity: item.quantity
+    })), 
+    [cartState.items]
+  );
+  
+  return (
+    <div className="bg-card border border-border rounded-lg p-4 hover:bg-card/80 transition-all duration-200 hover:shadow-md hover:border-ui-teal/50 w-fit max-w-full">
+      <div className="flex items-center justify-between gap-3 mb-3">
+        <div className="flex items-center gap-2">
+          <div className="p-1 bg-ui-teal/10 rounded">
+            <div className="size-3 bg-ui-teal rounded-sm flex items-center justify-center">
+              <div className="size-1.5 bg-white rounded-full"></div>
+            </div>
+          </div>
+          <h3 className="text-foreground font-medium text-sm whitespace-nowrap">Checkout</h3>
+        </div>
+      </div>
+      
+      {/* Order Preview */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <span className="text-sm font-medium text-foreground">{totalItems} items</span>
+          <span className="text-xs text-muted-foreground">Order Total</span>
+        </div>
+        
+        <div className="space-y-1">
+          {cartState.items.slice(0, 2).map((item: any, index: number) => (
+            <div key={index} className="flex justify-between text-xs">
+              <span className="text-muted-foreground">{item.name} × {item.quantity}</span>
+              <span className="text-foreground">${(item.price * item.quantity).toFixed(2)}</span>
+            </div>
+          ))}
+          {cartState.items.length > 2 && (
+            <div className="text-xs text-muted-foreground">
+              +{cartState.items.length - 2} more items
+            </div>
+          )}
+        </div>
+        
+        <div className="border-t border-border pt-2">
+          <div className="flex justify-between items-center">
+            <span className="text-sm font-medium text-foreground">Total</span>
+            <span className="text-lg font-bold text-foreground">${totalPrice.toFixed(2)}</span>
+          </div>
+        </div>
+        
+        {/* Edit Button */}
+        <div className="pt-2">
+          <button
+            onClick={() => {
+              console.log('🛒 Opening cart management in sidebar');
+              showInRightPanel('viewCart', { 
+                summary: { totalItems, totalPrice, totalQuantity: totalItems },
+                cartData: { items: cartState.items, totalItems, totalPrice, lastUpdated: new Date() }
+              });
+            }}
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs bg-muted hover:bg-muted/80 text-foreground rounded-md transition-colors font-medium"
+          >
+            Edit Order
+          </button>
+        </div>
+        
+        {/* Stripe Payment Component */}
+        <div className="pt-3 border-t border-border">
+          <div className="bg-ui-teal/10 border border-ui-teal/30 rounded-lg p-3 mb-3">
+            <p className="text-ui-teal text-xs font-medium">
+              Ready to process payment! Complete your purchase below.
+            </p>
+          </div>
+          
+          <StripePaymentComponent
+            amount={totalPrice}
+            items={stripeItems}
+            onPaymentSuccess={(paymentIntent) => {
+              console.log('Payment successful:', paymentIntent);
+            }}
+            onPaymentError={(error) => {
+              console.error('Payment error:', error);
+            }}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export const Message = ({
   chatId,
   role,
@@ -273,29 +373,6 @@ export const Message = ({
           />
         );
         break;
-      case "processPayment":
-        component = (
-          <div className="p-4 space-y-4">
-            <div className="bg-ui-teal/10 border border-ui-teal/30 rounded-lg p-4">
-              <p className="text-ui-teal text-sm font-medium">
-                {result.message}
-              </p>
-            </div>
-            <StripePaymentComponent
-              amount={result.totalAmount}
-              items={result.items}
-              onPaymentSuccess={(paymentIntent) => {
-                console.log('Payment successful:', paymentIntent);
-                // Auto-close sidebar after successful payment
-                setTimeout(() => closeRightPanel(), 1000);
-              }}
-              onPaymentError={(error) => {
-                console.error('Payment error:', error);
-              }}
-            />
-          </div>
-        );
-        break;
       default:
         component = (
           <div className="p-4">
@@ -459,6 +536,67 @@ export const Message = ({
                       </div>
                     </div>
                   );
+                }
+
+                // Special handling for viewCart to show a cute cart summary
+                if (toolName === "viewCart") {
+                  const { summary, cartData } = result;
+                  
+                  return (
+                    <div 
+                      key={toolCallId} 
+                      onClick={() => {
+                        console.log('🛒 Opening sidebar with viewCart result');
+                        showInRightPanel(toolName, result);
+                      }}
+                      className="bg-card border border-border rounded-lg p-4 hover:bg-card/80 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-ui-teal/50 w-fit max-w-full"
+                    >
+                      <div className="flex items-center justify-between gap-3 mb-2">
+                        <div className="flex items-center gap-2">
+                          <div className="p-1 bg-ui-teal/10 rounded">
+                            <div className="size-3 bg-ui-teal rounded-sm flex items-center justify-center">
+                              <div className="size-1.5 bg-white rounded-full"></div>
+                            </div>
+                          </div>
+                          <h3 className="text-foreground font-medium text-sm whitespace-nowrap">Shopping Cart</h3>
+                        </div>
+                        <span className="text-muted-foreground text-xs">
+                          Expand →
+                        </span>
+                      </div>
+                      
+                      <div className="space-y-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-2">
+                          <span className="font-medium text-foreground">{summary.totalItems}</span>
+                          <span>items in cart</span>
+                        </div>
+                        
+                        <div className="flex items-center gap-4">
+                          <span>Total: <span className="font-medium text-foreground">${summary.totalPrice.toFixed(2)}</span></span>
+                          <span>Quantity: <span className="font-medium text-foreground">{summary.totalQuantity}</span></span>
+                        </div>
+                        
+                        {cartData.items.length > 0 && (
+                          <div className="flex flex-wrap gap-1">
+                            <span className="text-muted-foreground">Items:</span>
+                            {cartData.items.slice(0, 2).map((item: any, index: number) => (
+                              <span key={index} className="bg-muted px-2 py-0.5 rounded text-xs">
+                                {item.name} (${item.price})
+                              </span>
+                            ))}
+                            {cartData.items.length > 2 && (
+                              <span className="text-muted-foreground">+{cartData.items.length - 2} more</span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                }
+
+                // Special handling for processPayment to show simple checkout preview
+                if (toolName === "processPayment") {
+                  return <CheckoutPreview key={toolCallId} result={result} showInRightPanel={showInRightPanel} />;
                 }
 
                 // Special handling for createExecutionPlan - show the plan as todo list

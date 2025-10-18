@@ -60,11 +60,11 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
     datasets: [{
       data: Object.values(summary.statusBreakdown),
       backgroundColor: [
-        '#00BCD4', // teal for PAID (using accent color)
-        '#CE9178', // orange for PENDING (using string literal color)
-        '#ef4444', // red for FAILED (keeping red)
-        '#A0A0A0', // light gray for CANCELLED (using secondary text color)
-        '#569CD6', // light blue for others (using SQL function color)
+        '#10B981', // green for PAID
+        '#F59E0B', // amber for PENDING
+        '#EF4444', // red for FAILED
+        '#6B7280', // gray for CANCELLED
+        '#7C3AED', // violet accent for others
       ],
       borderWidth: 0,
     }]
@@ -104,12 +104,12 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
       datasets: [{
         label: 'Revenue',
         data: values,
-        backgroundColor: 'rgba(139, 92, 246, 0.1)',
-        borderColor: '#00BCD4', // teal accent color
+        backgroundColor: 'rgba(124, 58, 237, 0.12)',
+        borderColor: '#7C3AED', // accent violet
         borderWidth: 3,
         fill: true,
         tension: 0.4,
-        pointBackgroundColor: '#00BCD4', // teal accent color
+        pointBackgroundColor: '#7C3AED', // accent violet
         pointBorderColor: '#ffffff',
         pointBorderWidth: 2,
         pointRadius: 5,
@@ -146,8 +146,8 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
       datasets: [{
         label: 'Orders',
         data: counts,
-        backgroundColor: '#00BCD4', // teal accent color
-        borderColor: '#00BCD4', // teal accent color
+        backgroundColor: '#7C3AED', // accent violet
+        borderColor: '#7C3AED', // accent violet
         borderWidth: 0,
       }]
     };
@@ -159,8 +159,8 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
       <Card className="border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-950 w-full">
         <CardContent className="p-4">
           <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
-              <Package className="h-4 w-4 text-red-600 dark:text-red-400" />
+            <div className="flex size-8 items-center justify-center rounded-full bg-red-100 dark:bg-red-900">
+              <Package className="size-4 text-red-600 dark:text-red-400" />
             </div>
             <div>
               <h3 className="font-semibold text-sm text-red-800 dark:text-red-200">Error Loading Orders</h3>
@@ -176,53 +176,59 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
 
   return (
     <div className="space-y-4 w-full p-4">
-      {/* Compact Summary Cards */}
+      {/* Summary Cards - dark neutral with accent */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <Card className="bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-blue-950 dark:to-indigo-900 border-blue-200 dark:border-blue-800">
+        <Card className="bg-card border border-border">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <Package className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                <span className="text-sm font-medium text-blue-600 dark:text-blue-400">Orders</span>
+                <span className="inline-flex items-center justify-center size-5 rounded-md bg-accent/15">
+                  <Package className="size-3.5 text-accent" />
+                </span>
+                <span className="text-sm font-medium text-foreground">Orders</span>
               </div>
-              <span className="text-sm font-bold text-blue-800 dark:text-blue-200">{summary.totalOrders}</span>
+              <span className="text-sm font-semibold text-foreground">{summary.totalOrders}</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-green-50 to-emerald-100 dark:from-green-950 dark:to-emerald-900 border-green-200 dark:border-green-800">
+        <Card className="bg-card border border-border">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <DollarSign className="h-4 w-4 text-green-600 dark:text-green-400" />
-                <span className="text-sm font-medium text-green-600 dark:text-green-400">Total Value</span>
+                <span className="inline-flex items-center justify-center size-5 rounded-md bg-accent/15">
+                  <DollarSign className="size-3.5 text-accent" />
+                </span>
+                <span className="text-sm font-medium text-foreground">Total Value</span>
               </div>
-              <span className="text-sm font-bold text-green-800 dark:text-green-200">
-                {formatCurrency(summary.totalAmount)}
-              </span>
+              <span className="text-sm font-semibold text-foreground">{formatCurrency(summary.totalAmount)}</span>
             </div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-purple-50 to-violet-100 dark:from-purple-950 dark:to-violet-900 border-purple-200 dark:border-purple-800">
+        <Card className="bg-card border border-border">
           <CardContent className="p-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                <span className="text-sm font-medium text-purple-600 dark:text-purple-400">Recent</span>
+                <span className="inline-flex items-center justify-center size-5 rounded-md bg-accent/15">
+                  <TrendingUp className="size-3.5 text-accent" />
+                </span>
+                <span className="text-sm font-medium text-foreground">Recent</span>
               </div>
-              <span className="text-sm font-bold text-purple-800 dark:text-purple-200">{summary.recentOrders}</span>
+              <span className="text-sm font-semibold text-foreground">{summary.recentOrders}</span>
             </div>
-            <div className="text-xs text-purple-600 dark:text-purple-400 mt-1">Last 30 days</div>
+            <div className="text-xs text-muted-foreground mt-1">Last 30 days</div>
           </CardContent>
         </Card>
 
-        <Card className="bg-gradient-to-br from-orange-50 to-amber-100 dark:from-orange-950 dark:to-amber-900 border-orange-200 dark:border-orange-800">
+        <Card className="bg-card border border-border">
           <CardContent className="p-3">
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
-                <CalendarDays className="h-4 w-4 text-orange-600 dark:text-orange-400" />
-                <span className="text-sm font-medium text-orange-600 dark:text-orange-400">Status</span>
+                <span className="inline-flex items-center justify-center size-5 rounded-md bg-accent/15">
+                  <CalendarDays className="size-3.5 text-accent" />
+                </span>
+                <span className="text-sm font-medium text-foreground">Status</span>
               </div>
             </div>
             <div className="flex flex-wrap gap-1">
@@ -239,10 +245,10 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
       {/* Charts Section */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Order Status Distribution */}
-        <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+        <Card className="bg-card border border-border">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-sm">
-              <PieChartIcon className="h-4 w-4" />
+              <PieChartIcon className="size-4" />
               Order Status Distribution
             </CardTitle>
           </CardHeader>
@@ -254,10 +260,10 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
         </Card>
 
         {/* Monthly Order Count */}
-        <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+        <Card className="bg-card border border-border">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-sm">
-              <BarChart3 className="h-4 w-4" />
+              <BarChart3 className="size-4" />
               Monthly Order Count
             </CardTitle>
           </CardHeader>
@@ -270,10 +276,10 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
       </div>
 
       {/* Revenue Trend Chart */}
-      <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800">
+      <Card className="bg-card border border-border">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <TrendingUp className="h-4 w-4" />
+            <TrendingUp className="size-4" />
             Revenue Trend (Last 6 Months)
           </CardTitle>
         </CardHeader>
@@ -285,17 +291,17 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
       </Card>
 
       {/* Compact Orders List */}
-      <Card className="bg-white dark:bg-gray-900 border-gray-200 dark:border-gray-800 w-full">
+      <Card className="bg-card border border-border w-full">
         <CardHeader className="pb-3">
           <CardTitle className="flex items-center gap-2 text-base">
-            <Package className="h-4 w-4" />
+            <Package className="size-4" />
             Orders ({orders.length})
           </CardTitle>
         </CardHeader>
         <CardContent className="p-0">
           {orders.length === 0 ? (
             <div className="p-6 text-center">
-              <Package className="mx-auto h-8 w-8 text-gray-400" />
+              <Package className="mx-auto size-8 text-gray-400" />
               <h3 className="mt-2 text-xs font-medium text-gray-900 dark:text-gray-100">No orders found</h3>
               <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
                 You haven&apos;t placed any orders yet.
@@ -304,7 +310,7 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
           ) : (
             <div className="space-y-2 max-h-80 overflow-y-auto">
               {orders.map((order) => (
-                <div key={order.id} className="p-4 border-b border-gray-200 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors">
+                <div key={order.id} className="p-4 border-b border-border last:border-b-0 hover:bg-surface-1/50 transition-colors">
                   <div className="space-y-2">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
@@ -324,7 +330,7 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
                       <Button
                         variant="outline"
                         size="sm"
-                        className="h-6 px-2 text-xs border-purple-200 text-purple-700 hover:bg-purple-50 dark:border-purple-800 dark:text-purple-300 dark:hover:bg-purple-950"
+                        className="h-6 px-2 text-xs border-accent/30 text-accent hover:bg-accent/10"
                       >
                         View
                       </Button>
@@ -339,9 +345,9 @@ export function OrdersDisplayResults({ data, success, error, message }: OrdersDi
 
       {/* Compact Message */}
       {message && (
-        <Card className="bg-blue-50 dark:bg-blue-950 border-blue-200 dark:border-blue-800">
+        <Card className="bg-accent/10 border-accent/30">
           <CardContent className="p-3">
-            <p className="text-sm text-blue-800 dark:text-blue-200">{message}</p>
+            <p className="text-sm text-accent">{message}</p>
           </CardContent>
         </Card>
       )}

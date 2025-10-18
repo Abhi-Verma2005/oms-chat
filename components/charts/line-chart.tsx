@@ -26,6 +26,7 @@ export default function LineChart({
 }: LineChartProps) {
 
   const [chart, setChart] = useState<Chart | null>(null)
+  const [mounted, setMounted] = useState(false)
   const canvas = useRef<HTMLCanvasElement>(null)
   const chartValue = useRef<HTMLSpanElement>(null)
   const chartDeviation = useRef<HTMLDivElement>(null)  
@@ -33,9 +34,12 @@ export default function LineChart({
   const darkMode = theme === 'dark'
   const { textColor, gridColor, tooltipTitleColor, tooltipBodyColor, tooltipBgColor, tooltipBorderColor } = chartColors
 
+  useEffect(() => { setMounted(true) }, [])
+
   useEffect(() => {
+    if (!mounted) return
     const ctx = canvas.current
-    if (!ctx) return
+    if (!ctx || !(ctx as any).isConnected || !ctx.ownerDocument) return
 
     const newChart = new Chart(ctx, {
       type: 'line',
@@ -124,7 +128,7 @@ export default function LineChart({
     })
     setChart(newChart)
     return () => newChart.destroy()
-  }, [])
+  }, [mounted])
 
   useEffect(() => {
     if (!chart) return

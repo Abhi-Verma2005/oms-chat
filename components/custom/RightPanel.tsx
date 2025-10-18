@@ -12,7 +12,7 @@ export function RightPanel() {
     <AnimatePresence>
       {isRightPanelOpen && (
         <motion.div
-          className="flex flex-col bg-card border-l border-border shadow-lg h-full rounded-l-lg"
+          className="flex flex-col bg-card border-l border-border shadow-lg h-full rounded-l-lg min-w-[300px] max-w-[70vw] md:max-w-[70vw]"
           style={{ width: `${rightPanelWidth}px` }}
           initial={{ x: "100%" }}
           animate={{ x: 0 }}

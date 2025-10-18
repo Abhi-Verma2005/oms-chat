@@ -2,7 +2,7 @@
 
 import { Attachment, ToolInvocation } from "ai";
 import { motion } from "framer-motion";
-import { ThumbsUp, ThumbsDown, Copy, RotateCcw, ChevronDown } from "lucide-react";
+import { ThumbsUp, ThumbsDown, Copy, RotateCcw, ChevronDown, DollarSign, TrendingUp } from "lucide-react";
 import { ReactNode, useEffect, useRef, useCallback, useMemo, useState } from "react";
 
 import { BotIcon, UserIcon } from "./icons";
@@ -40,11 +40,11 @@ function CheckoutPreview({ result, showInRightPanel }: { result: any; showInRigh
   );
   
   return (
-    <div className="bg-card border border-border rounded-lg p-4 hover:bg-card/80 transition-all duration-200 hover:shadow-md hover:border-ui-teal/50 w-fit max-w-full">
+    <div className="bg-card border border-border rounded-lg p-4 hover:bg-card/80 transition-all duration-200 hover:shadow-md hover:border-accent/50 w-fit max-w-full">
       <div className="flex items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
-          <div className="p-1 bg-ui-teal/10 rounded">
-            <div className="size-3 bg-ui-teal rounded-sm flex items-center justify-center">
+          <div className="p-1 bg-accent/10 rounded">
+            <div className="size-3 bg-accent rounded-sm flex items-center justify-center">
               <div className="size-1.5 bg-white rounded-full"></div>
             </div>
           </div>
@@ -98,8 +98,8 @@ function CheckoutPreview({ result, showInRightPanel }: { result: any; showInRigh
         
         {/* Stripe Payment Component */}
         <div className="pt-3 border-t border-border">
-          <div className="bg-ui-teal/10 border border-ui-teal/30 rounded-lg p-3 mb-3">
-            <p className="text-ui-teal text-xs font-medium">
+          <div className="bg-accent/10 border border-accent/30 rounded-lg p-3 mb-3">
+            <p className="text-accent text-xs font-medium">
               Ready to process payment! Complete your purchase below.
             </p>
           </div>
@@ -130,6 +130,7 @@ export const Message = ({
   isLastMessage = false,
   isGenerating = false,
   onAppendMessage,
+  isActiveForFilters = false,
 }: {
   chatId: string;
   role: string;
@@ -140,6 +141,7 @@ export const Message = ({
   isLastMessage?: boolean;
   isGenerating?: boolean;
   onAppendMessage?: (message: { role: 'user'; content: string }) => Promise<string | null | undefined>;
+  isActiveForFilters?: boolean;
 }) => {
   const { setRightPanelContent, closeRightPanel } = useSplitScreen();
   const { addItem, removeItem, getCartItemIds, state: cartState, clearCart } = useCart();
@@ -206,26 +208,53 @@ export const Message = ({
     }
   }, [chatId]);
 
+  // Pretty-print filters for user-facing messages
+  const formatFiltersForMessage = useCallback((filters: any) => {
+    const parts: string[] = [];
+    if (filters?.priceRange && (filters.priceRange.min != null || filters.priceRange.max != null)) {
+      const minP = filters.priceRange.min != null ? `$${filters.priceRange.min}` : 'Any';
+      const maxP = filters.priceRange.max != null ? `$${filters.priceRange.max}` : 'Any';
+      parts.push(`Price ${minP} - ${maxP}`);
+    } else if (filters?.minPrice != null || filters?.maxPrice != null) {
+      const minP = filters.minPrice != null ? `$${filters.minPrice}` : 'Any';
+      const maxP = filters.maxPrice != null ? `$${filters.maxPrice}` : 'Any';
+      parts.push(`Price ${minP} - ${maxP}`);
+    }
+    const drMin = filters?.drRange?.minDR ?? filters?.minDR;
+    const drMax = filters?.drRange?.maxDR ?? filters?.maxDR;
+    if (drMin != null || drMax != null) {
+      parts.push(`DR ${drMin ?? 'Any'} - ${drMax ?? 'Any'}`);
+    }
+    const daMin = filters?.drRange?.minDA ?? filters?.minDA;
+    const daMax = filters?.drRange?.maxDA ?? filters?.maxDA;
+    if (daMin != null || daMax != null) {
+      parts.push(`DA ${daMin ?? 'Any'} - ${daMax ?? 'Any'}`);
+    }
+    return parts.length > 0 ? parts.join('; ') : 'No filters set';
+  }, []);
+
   // Function to handle "Done Adding to Cart" button click
   // Function to trigger AI to continue filter collection
   const triggerFilterCollectionStep = useCallback(async (step: string, filters: any) => {
     try {
-      const message = `I've set my ${step === 'price' ? 'price range' : 'DR/DA ranges'}. Please continue with the next step in the filter collection process. Current filters: ${JSON.stringify(filters)}`;
+      const pretty = formatFiltersForMessage(filters);
+      const message = `I've set my ${step === 'price' ? 'price range' : 'DR/DA ranges'}. Please continue with the next step in the filter collection process. Current filters: ${pretty}.`;
       await onAppendMessage?.({ role: 'user', content: message });
     } catch (error) {
       console.error('Error triggering filter collection step:', error);
     }
-  }, [onAppendMessage]);
+  }, [onAppendMessage, formatFiltersForMessage]);
 
   // Function to trigger final browse publishers call
   const triggerFinalBrowseCall = useCallback(async (filters: any) => {
     try {
-      const message = `Perfect! I've completed setting up all my filters. Please now browse publishers with these filters: ${JSON.stringify(filters)}`;
+      const pretty = formatFiltersForMessage(filters);
+      const message = `Perfect! I've completed setting up all my filters. Please browse publishers with these filters: ${pretty}.`;
       await onAppendMessage?.({ role: 'user', content: message });
     } catch (error) {
       console.error('Error triggering final browse call:', error);
     }
-  }, [onAppendMessage]);
+  }, [onAppendMessage, formatFiltersForMessage]);
 
   // Filter collection handlers
   const handlePriceRangeConfirm = useCallback((priceRange: { min: number; max: number }) => {
@@ -353,7 +382,7 @@ export const Message = ({
         component = (
           <div className="p-4">
             <h3 className="text-lg font-semibold mb-2">Publisher Details</h3>
-            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border">
+            <div className="bg-card rounded-lg p-4 border border-border">
               <pre className="text-sm overflow-auto">
                 {JSON.stringify(result, null, 2)}
               </pre>
@@ -377,7 +406,7 @@ export const Message = ({
         component = (
           <div className="p-4">
             <h3 className="text-lg font-semibold mb-2">Tool Result: {toolName}</h3>
-            <pre className="bg-muted p-4 rounded-lg overflow-auto text-sm">
+            <pre className="bg-card border border-border p-4 rounded-lg overflow-auto text-sm">
               {JSON.stringify(result, null, 2)}
             </pre>
           </div>
@@ -392,7 +421,7 @@ export const Message = ({
     } else {
       console.log('❌ No component created for tool:', toolName, 'result:', result);
     }
-  }, [setRightPanelContent, addItem, removeItem, getCartItemIds, handleDoneAddingToCart, closeRightPanel]);
+  }, [setRightPanelContent, addItem, removeItem, getCartItemIds, handleDoneAddingToCart]);
 
   // Auto-display completed tool results
   const toolStateSignature = useMemo(() => {
@@ -418,7 +447,15 @@ export const Message = ({
         
         // Handle collectPublisherFilters inline (embedded), don't open sidebar
         if (toolName === "collectPublisherFilters") {
-          // Don't open sidebar for filter collection - handled in result state
+          // If filters collection is complete, auto-trigger final browse call and render nothing
+          if (result?.action === "collect_complete") {
+            try {
+              // Auto-trigger browse with collected filters
+              triggerFinalBrowseCall(result.collectedFilters);
+            } catch (e) {
+              console.error('Failed to trigger final browse after collect_complete:', e);
+            }
+          }
         } else {
           showInRightPanel(toolName, result, `result-${toolCallId}`);
         }
@@ -427,7 +464,7 @@ export const Message = ({
         openedToolCalls.current.delete(toolCallId);
       }
     });
-  }, [toolStateSignature, toolInvocations, showInRightPanel, setRightPanelContent]);
+  }, [toolStateSignature, toolInvocations, showInRightPanel, setRightPanelContent, triggerFinalBrowseCall]);
 
   return (
     <motion.div
@@ -494,12 +531,12 @@ export const Message = ({
                         console.log('🔍 Opening sidebar with browsePublishers result');
                         showInRightPanel(toolName, result);
                       }}
-                      className="bg-card border border-border rounded-lg p-4 hover:bg-card/80 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-ui-teal/50 w-fit max-w-full"
+                      className="bg-card border border-border rounded-lg p-4 hover:bg-surface-1/50 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-accent/50 w-fit max-w-full"
                     >
                       <div className="flex items-center justify-between gap-3 mb-2">
                         <div className="flex items-center gap-2">
-                          <div className="p-1 bg-ui-teal/10 rounded">
-                            <div className="size-3 bg-ui-teal rounded-sm flex items-center justify-center">
+                          <div className="p-1 bg-accent/10 rounded">
+                            <div className="size-3 bg-accent rounded-sm flex items-center justify-center">
                               <div className="size-1.5 bg-white rounded-full"></div>
                             </div>
                           </div>
@@ -523,10 +560,10 @@ export const Message = ({
                         </div>
                         
                         {appliedFilters.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
+                          <div className="flex flex-wrap gap-1 items-center">
                             <span className="text-muted-foreground">Filters:</span>
                             {appliedFilters.slice(0, 2).map((filter, index) => (
-                              <span key={index} className="bg-muted px-2 py-0.5 rounded text-xs">{filter}</span>
+                              <span key={index} className="px-2 py-0.5 rounded text-xs bg-accent/15 text-accent border border-accent/20">{filter}</span>
                             ))}
                             {appliedFilters.length > 2 && (
                               <span className="text-muted-foreground">+{appliedFilters.length - 2} more</span>
@@ -549,12 +586,12 @@ export const Message = ({
                         console.log('🛒 Opening sidebar with viewCart result');
                         showInRightPanel(toolName, result);
                       }}
-                      className="bg-card border border-border rounded-lg p-4 hover:bg-card/80 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-ui-teal/50 w-fit max-w-full"
+                      className="bg-card border border-border rounded-lg p-4 hover:bg-surface-1/50 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-accent/50 w-fit max-w-full"
                     >
                       <div className="flex items-center justify-between gap-3 mb-2">
                         <div className="flex items-center gap-2">
-                          <div className="p-1 bg-ui-teal/10 rounded">
-                            <div className="size-3 bg-ui-teal rounded-sm flex items-center justify-center">
+                          <div className="p-1 bg-accent/10 rounded">
+                            <div className="size-3 bg-accent rounded-sm flex items-center justify-center">
                               <div className="size-1.5 bg-white rounded-full"></div>
                             </div>
                           </div>
@@ -580,7 +617,7 @@ export const Message = ({
                           <div className="flex flex-wrap gap-1">
                             <span className="text-muted-foreground">Items:</span>
                             {cartData.items.slice(0, 2).map((item: any, index: number) => (
-                              <span key={index} className="bg-muted px-2 py-0.5 rounded text-xs">
+                              <span key={index} className="px-2 py-0.5 rounded text-xs bg-accent/15 text-accent border border-accent/20">
                                 {item.name} (${item.price})
                               </span>
                             ))}
@@ -664,19 +701,82 @@ export const Message = ({
                   if (action === "show_price_modal") {
                     return (
                       <div key={toolCallId} className="max-w-md">
-                        <PriceRangeEmbed
-                          onConfirm={handlePriceRangeConfirm}
-                          onSkip={handlePriceRangeSkip}
-                        />
+                        {isActiveForFilters ? (
+                          <PriceRangeEmbed
+                            onConfirm={handlePriceRangeConfirm}
+                            onSkip={handlePriceRangeSkip}
+                          />
+                        ) : (
+                          <div 
+                            className="bg-card border border-border rounded-lg p-4 space-y-4 max-w-sm opacity-60 cursor-default"
+                            onClick={(e) => e.preventDefault()}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onFocus={(e) => e.preventDefault()}
+                          >
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-accent/10 rounded-md">
+                              <DollarSign className="size-4 text-accent" />
+                            </div>
+                              <div>
+                                <h3 className="text-sm font-semibold text-foreground">Price Range Set</h3>
+                                <p className="text-xs text-muted-foreground">Filter completed in previous step</p>
+                              </div>
+                            </div>
+                            <div className="bg-muted/30 rounded-md p-3 text-center">
+                              <div className="text-xs text-muted-foreground mb-1">Range Applied</div>
+                            <div className="text-lg font-bold text-accent">
+                                $100 - $1000
+                              </div>
+                            </div>
+                            <div className="text-xs text-muted-foreground text-center">
+                              This filter was set in a previous message. Only the latest message allows filter changes.
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   } else if (action === "show_dr_modal") {
                     return (
                       <div key={toolCallId} className="max-w-md">
-                        <DRRangeEmbed
-                          onConfirm={handleDRRangeConfirm}
-                          onSkip={handleDRRangeSkip}
-                        />
+                        {isActiveForFilters ? (
+                          <DRRangeEmbed
+                            onConfirm={handleDRRangeConfirm}
+                            onSkip={handleDRRangeSkip}
+                          />
+                        ) : (
+                          <div 
+                            className="bg-card border border-border rounded-lg p-4 space-y-4 max-w-sm opacity-60 cursor-default"
+                            onClick={(e) => e.preventDefault()}
+                            onMouseDown={(e) => e.preventDefault()}
+                            onFocus={(e) => e.preventDefault()}
+                          >
+                          <div className="flex items-center gap-2">
+                            <div className="p-1.5 bg-accent/10 rounded-md">
+                              <TrendingUp className="size-4 text-accent" />
+                            </div>
+                              <div>
+                                <h3 className="text-sm font-semibold text-foreground">Authority Range Set</h3>
+                                <p className="text-xs text-muted-foreground">Filter completed in previous step</p>
+                              </div>
+                            </div>
+                            <div className="bg-muted/30 rounded-md p-3">
+                              <div className="text-xs text-muted-foreground mb-2 text-center">Ranges Applied</div>
+                              <div className="grid grid-cols-2 gap-3 text-xs">
+                                <div className="text-center">
+                                <div className="font-bold text-accent">DR</div>
+                                  <div className="text-foreground">20 - 80</div>
+                                </div>
+                                <div className="text-center">
+                                <div className="font-bold text-accent">DA</div>
+                                  <div className="text-foreground">20 - 80</div>
+                                </div>
+                              </div>
+                            </div>
+                            <div className="text-xs text-muted-foreground text-center">
+                              This filter was set in a previous message. Only the latest message allows filter changes.
+                            </div>
+                          </div>
+                        )}
                       </div>
                     );
                   } else if (action === "collect_complete") {
@@ -697,10 +797,10 @@ export const Message = ({
                           {message}
                         </div>
                         <div className="flex gap-2">
-                          <button
-                            onClick={() => triggerFinalBrowseCall(collectedFilters)}
-                            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium px-3 py-2 rounded-md transition-colors"
-                          >
+                        <button
+                          onClick={() => triggerFinalBrowseCall(collectedFilters)}
+                          className="flex-1 bg-accent hover:bg-accent/90 text-white text-xs font-medium px-3 py-2 rounded-md transition-colors"
+                        >
                             Search Publishers
                           </button>
                         </div>
@@ -722,7 +822,7 @@ export const Message = ({
                   <div 
                     key={toolCallId} 
                     onClick={() => showInRightPanel(toolName, result)}
-                    className="bg-card border border-border rounded-lg p-3 hover:bg-card/80 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-ui-teal/50 w-fit max-w-full"
+                    className="bg-card border border-border rounded-lg p-3 hover:bg-surface-1/50 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-accent/50 w-fit max-w-full"
                   >
                     <div className="flex items-center justify-between gap-3">
                       <h3 className="text-foreground font-medium text-sm whitespace-nowrap">{displayName}</h3>
@@ -735,16 +835,16 @@ export const Message = ({
                   <div key={toolCallId} className="relative bg-card border border-border rounded-lg p-3 overflow-hidden w-fit max-w-full">
                     {/* Animated border light */}
                     <div className="absolute inset-0 rounded-lg">
-                      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-ui-teal/50 to-transparent opacity-0 animate-[border-light_2s_ease-in-out_infinite]"></div>
+                      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-primary/60 to-transparent opacity-70 animate-[border-light_2s_ease-in-out_infinite]"></div>
                       <div className="absolute inset-px rounded-lg bg-card"></div>
                     </div>
                     
                     <div className="relative flex items-center justify-between gap-3">
                       <h3 className="text-foreground font-medium text-sm whitespace-nowrap">{displayName}</h3>
                       <div className="flex items-center gap-2">
-                        <div className="size-2 bg-ui-teal rounded-full animate-pulse"></div>
-                        <div className="size-2 bg-ui-teal rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                        <div className="size-2 bg-ui-teal rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+                        <div className="size-2 bg-accent rounded-full animate-pulse"></div>
+                        <div className="size-2 bg-accent rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
+                        <div className="size-2 bg-accent rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
                       </div>
                     </div>
                   </div>

@@ -65,8 +65,11 @@ export function Chat({
       const containerRect = containerRef.current.getBoundingClientRect();
       const newRightPanelWidth = containerRect.right - e.clientX;
       
-      // Constrain width between 300px and 60% of screen width
-      const maxWidth = window.innerWidth * 0.6;
+      // Constrain width between 300px and 70% of screen width
+      // On mobile, limit to 50% to ensure chat area remains usable
+      const isMobile = window.innerWidth < 768;
+      const maxWidthPercent = isMobile ? 0.5 : 0.7;
+      const maxWidth = window.innerWidth * maxWidthPercent;
       const constrainedWidth = Math.max(300, Math.min(newRightPanelWidth, maxWidth));
       setRightPanelWidth(constrainedWidth);
     };
@@ -89,6 +92,24 @@ export function Chat({
       document.body.style.userSelect = '';
     };
   }, [isResizing, setRightPanelWidth]);
+
+  // Handle window resize to ensure proper layout
+  useEffect(() => {
+    const handleResize = () => {
+      // Force a re-render to recalculate widths
+      if (isRightPanelOpen) {
+        const isMobile = window.innerWidth < 768;
+        const maxWidthPercent = isMobile ? 0.5 : 0.7;
+        const maxWidth = window.innerWidth * maxWidthPercent;
+        if (rightPanelWidth > maxWidth) {
+          setRightPanelWidth(maxWidth);
+        }
+      }
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [isRightPanelOpen, rightPanelWidth, setRightPanelWidth]);
 
   // Handle mouse down on resize handle
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -125,12 +146,18 @@ export function Chat({
       )}
 
       <div 
-        className={`flex flex-col justify-center pb-4 md:pb-8 transition-all duration-300 w-full ${
+        className={`flex flex-col justify-center pb-4 md:pb-8 transition-all duration-300 ${
           isRightPanelOpen ? 'mr-0' : ''
         }`}
         style={{
-          minWidth: isRightPanelOpen ? '300px' : '100%',
-          maxWidth: isRightPanelOpen ? `calc(100% - ${rightPanelWidth}px)` : '100%'
+          // Calculate available width based on both sidebars
+          width: isRightPanelOpen 
+            ? `calc(100vw - ${rightPanelWidth}px - ${isLeftSidebarCollapsed ? '64px' : '256px'})`
+            : `calc(100vw - ${isLeftSidebarCollapsed ? '64px' : '256px'})`,
+          minWidth: isRightPanelOpen ? '300px' : '400px',
+          marginLeft: isLeftSidebarCollapsed ? '64px' : '256px',
+          // Ensure we don't go negative
+          maxWidth: 'calc(100vw - 64px)'
         }}
       >
         <div 
@@ -138,11 +165,21 @@ export function Chat({
         >
           <div
             ref={messagesContainerRef}
-            className="flex flex-col gap-4 size-full items-center overflow-y-auto px-4 md:px-0"
+            className="flex flex-col gap-4 w-full items-center overflow-y-auto px-4 md:px-0"
           >
             {messages.length === 0 && <Overview />}
 
-            {messages.map((message, index) => (
+            {(() => {
+              // Determine the last user message index
+              let lastUserIndex = -1;
+              for (let i = messages.length - 1; i >= 0; i--) {
+                if (messages[i].role === 'user') {
+                  lastUserIndex = i;
+                  break;
+                }
+              }
+
+              return messages.map((message, index) => (
               <PreviewMessage
                 key={message.id}
                 chatId={id}
@@ -154,8 +191,10 @@ export function Chat({
                 isLastMessage={index === messages.length - 1}
                 isGenerating={isLoading && index === messages.length - 1}
                 onAppendMessage={append}
+                isActiveForFilters={message.role === 'assistant' && index > lastUserIndex}
               />
-            ))}
+              ));
+            })()}
 
             <div
               ref={messagesEndRef}
@@ -163,7 +202,7 @@ export function Chat({
             />
           </div>
 
-          <form className="flex flex-row gap-2 relative items-end w-full md:max-w-[650px] max-w-[calc(100dvw-32px)] px-4 md:px-0">
+          <form className="flex flex-row gap-2 relative items-end w-full md:max-w-[650px] px-4 md:px-0">
             <MultimodalInput
               input={input}
               setInput={setInput}

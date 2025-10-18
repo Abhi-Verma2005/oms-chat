@@ -150,9 +150,7 @@ export default function CartManagementResults({
     <div className="space-y-4 p-6">
       {/* Cart Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold text-foreground">
-          Cart ({displayCartData.totalItems})
-        </h3>
+        <h3 className="text-xl font-semibold text-foreground">Cart ({displayCartData.totalItems})</h3>
         
         <div className="flex items-center gap-2">
           {/* Test button to check if context functions work */}
@@ -202,8 +200,8 @@ export default function CartManagementResults({
               <div className="flex items-center gap-4">
                 {/* Item Info */}
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="size-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                    <span className="text-primary font-semibold text-sm">P</span>
+                  <div className="size-10 bg-muted rounded-full flex items-center justify-center shrink-0">
+                    <span className="text-foreground font-semibold text-sm">P</span>
                   </div>
                   <div className="flex-1 min-w-0">
                     <h4 className="font-medium text-foreground truncate">
@@ -238,7 +236,7 @@ export default function CartManagementResults({
                         e.stopPropagation()
                         handleQuantityChange(item.id, item.quantity - 1)
                       }}
-                      className="size-8"
+                      className="size-8 bg-card border-border hover:bg-muted"
                     >
                       <Minus className="size-3" />
                     </Button>
@@ -254,7 +252,7 @@ export default function CartManagementResults({
                         e.stopPropagation()
                         handleQuantityChange(item.id, item.quantity + 1)
                       }}
-                      className="size-8"
+                      className="size-8 bg-card border-border hover:bg-muted"
                     >
                       <Plus className="size-3" />
                     </Button>
@@ -314,7 +312,7 @@ export default function CartManagementResults({
 
             <Button
               onClick={onDoneAddingToCart || (() => {})}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+              className="w-full md:w-auto self-start bg-accent hover:bg-accent/90 text-white py-3 px-5 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
               size="lg"
             >
               <CheckCircle className="size-4" />

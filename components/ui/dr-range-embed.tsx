@@ -24,9 +24,9 @@ export function DRRangeEmbed({ onConfirm, onSkip }: DRRangeEmbedProps) {
   return (
     <div className="bg-card border border-border rounded-lg p-4 space-y-4 max-w-sm">
       {/* Header */}
-      <div className="flex items-center gap-2">
-        <div className="p-1.5 bg-blue-100 dark:bg-blue-900/30 rounded-md">
-          <TrendingUp className="size-4 text-blue-600 dark:text-blue-400" />
+      <div className="flex items-center gap-3">
+        <div className="p-1.5 bg-primary/10 rounded-md">
+          <TrendingUp className="size-4 text-primary" />
         </div>
         <div>
           <h3 className="text-sm font-semibold text-foreground">Set Authority Range</h3>
@@ -41,7 +41,7 @@ export function DRRangeEmbed({ onConfirm, onSkip }: DRRangeEmbedProps) {
           <span className="text-xs font-medium text-foreground">Domain Rating (DR)</span>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs text-muted-foreground">Min DR</label>
               <span className="text-xs font-semibold text-foreground">{drRange.minDR}</span>
@@ -53,13 +53,13 @@ export function DRRangeEmbed({ onConfirm, onSkip }: DRRangeEmbedProps) {
               step="1"
               value={drRange.minDR}
               onChange={(e) => setDrRange(prev => ({ ...prev, minDR: parseInt(e.target.value) }))}
-              className="w-full h-2 bg-muted/80 rounded-full appearance-none cursor-pointer slider-thumb"
+              className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer slider-thumb"
               style={{
-                background: `linear-gradient(to right, hsl(var(--primary)/0.55) 0%, hsl(var(--primary)/0.55) ${((drRange.minDR - 1) / (50 - 1)) * 100}%, #e5e7eb ${((drRange.minDR - 1) / (50 - 1)) * 100}%, #e5e7eb 100%)`
+                background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((drRange.minDR - 1) / (50 - 1)) * 100}%, hsl(var(--muted)) ${((drRange.minDR - 1) / (50 - 1)) * 100}%, hsl(var(--muted)) 100%)`
               }}
             />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs text-muted-foreground">Max DR</label>
               <span className="text-xs font-semibold text-foreground">{drRange.maxDR}</span>
@@ -71,9 +71,9 @@ export function DRRangeEmbed({ onConfirm, onSkip }: DRRangeEmbedProps) {
               step="1"
               value={drRange.maxDR}
               onChange={(e) => setDrRange(prev => ({ ...prev, maxDR: parseInt(e.target.value) }))}
-              className="w-full h-2 bg-muted/80 rounded-full appearance-none cursor-pointer slider-thumb"
+              className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer slider-thumb"
               style={{
-                background: `linear-gradient(to right, hsl(var(--primary)/0.55) 0%, hsl(var(--primary)/0.55) ${((drRange.maxDR - 50) / (100 - 50)) * 100}%, #e5e7eb ${((drRange.maxDR - 50) / (100 - 50)) * 100}%, #e5e7eb 100%)`
+                background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((drRange.maxDR - 50) / (100 - 50)) * 100}%, hsl(var(--muted)) ${((drRange.maxDR - 50) / (100 - 50)) * 100}%, hsl(var(--muted)) 100%)`
               }}
             />
           </div>
@@ -87,7 +87,7 @@ export function DRRangeEmbed({ onConfirm, onSkip }: DRRangeEmbedProps) {
           <span className="text-xs font-medium text-foreground">Domain Authority (DA)</span>
         </div>
         <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs text-muted-foreground">Min DA</label>
               <span className="text-xs font-semibold text-foreground">{drRange.minDA}</span>
@@ -99,13 +99,13 @@ export function DRRangeEmbed({ onConfirm, onSkip }: DRRangeEmbedProps) {
               step="1"
               value={drRange.minDA}
               onChange={(e) => setDrRange(prev => ({ ...prev, minDA: parseInt(e.target.value) }))}
-              className="w-full h-2 bg-muted/80 rounded-full appearance-none cursor-pointer slider-thumb"
+              className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer slider-thumb"
               style={{
-                background: `linear-gradient(to right, hsl(var(--primary)/0.55) 0%, hsl(var(--primary)/0.55) ${((drRange.minDA - 1) / (50 - 1)) * 100}%, #e5e7eb ${((drRange.minDA - 1) / (50 - 1)) * 100}%, #e5e7eb 100%)`
+                background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((drRange.minDA - 1) / (50 - 1)) * 100}%, hsl(var(--muted)) ${((drRange.minDA - 1) / (50 - 1)) * 100}%, hsl(var(--muted)) 100%)`
               }}
             />
           </div>
-          <div className="space-y-1">
+          <div className="space-y-2">
             <div className="flex items-center justify-between">
               <label className="text-xs text-muted-foreground">Max DA</label>
               <span className="text-xs font-semibold text-foreground">{drRange.maxDA}</span>
@@ -117,9 +117,9 @@ export function DRRangeEmbed({ onConfirm, onSkip }: DRRangeEmbedProps) {
               step="1"
               value={drRange.maxDA}
               onChange={(e) => setDrRange(prev => ({ ...prev, maxDA: parseInt(e.target.value) }))}
-              className="w-full h-2 bg-muted/80 rounded-full appearance-none cursor-pointer slider-thumb"
+              className="w-full h-2 bg-muted rounded-full appearance-none cursor-pointer slider-thumb"
               style={{
-                background: `linear-gradient(to right, hsl(var(--primary)/0.55) 0%, hsl(var(--primary)/0.55) ${((drRange.maxDA - 50) / (100 - 50)) * 100}%, #e5e7eb ${((drRange.maxDA - 50) / (100 - 50)) * 100}%, #e5e7eb 100%)`
+                background: `linear-gradient(to right, hsl(var(--primary)) 0%, hsl(var(--primary)) ${((drRange.maxDA - 50) / (100 - 50)) * 100}%, hsl(var(--muted)) ${((drRange.maxDA - 50) / (100 - 50)) * 100}%, hsl(var(--muted)) 100%)`
               }}
             />
           </div>
@@ -127,15 +127,15 @@ export function DRRangeEmbed({ onConfirm, onSkip }: DRRangeEmbedProps) {
       </div>
 
       {/* Selected Ranges Display */}
-      <div className="bg-muted/30 rounded-md p-3">
+      <div className="bg-muted/30 border border-border rounded-md p-3">
         <div className="text-xs text-muted-foreground mb-2 text-center">Selected Ranges</div>
         <div className="grid grid-cols-2 gap-3 text-xs">
           <div className="text-center">
-            <div className="font-bold text-blue-600 dark:text-blue-400">DR</div>
+            <div className="font-bold text-primary">DR</div>
             <div className="text-foreground">{drRange.minDR} - {drRange.maxDR}</div>
           </div>
           <div className="text-center">
-            <div className="font-bold text-blue-600 dark:text-blue-400">DA</div>
+            <div className="font-bold text-primary">DA</div>
             <div className="text-foreground">{drRange.minDA} - {drRange.maxDA}</div>
           </div>
         </div>
@@ -147,14 +147,14 @@ export function DRRangeEmbed({ onConfirm, onSkip }: DRRangeEmbedProps) {
           onClick={onSkip}
           variant="outline"
           size="sm"
-          className="text-xs h-8 px-4"
+          className="text-xs h-8 px-3"
         >
           Skip
         </Button>
         <Button
           onClick={handleConfirm}
           size="sm"
-          className="text-xs h-8 px-4 bg-purple-600 hover:bg-purple-700"
+          className="text-xs h-8 px-3 bg-primary hover:bg-primary/90 text-primary-foreground"
         >
           Apply Filter
         </Button>

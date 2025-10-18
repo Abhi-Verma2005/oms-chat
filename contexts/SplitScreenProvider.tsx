@@ -42,8 +42,11 @@ export function SplitScreenProvider({ children }: { children: ReactNode }) {
   };
 
   const handleSetRightPanelWidth = (width: number) => {
-    // Constrain width between 300px and 60% of screen width
-    const maxWidth = window.innerWidth * 0.6;
+    // Constrain width between 300px and 70% of screen width
+    // On mobile, limit to 50% to ensure chat area remains usable
+    const isMobile = window.innerWidth < 768;
+    const maxWidthPercent = isMobile ? 0.5 : 0.7;
+    const maxWidth = window.innerWidth * maxWidthPercent;
     const constrainedWidth = Math.max(300, Math.min(width, maxWidth));
     setRightPanelWidth(constrainedWidth);
   };

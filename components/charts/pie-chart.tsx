@@ -27,20 +27,28 @@ export default function PieChart({
 }: PieProps) {
 
   const [chart, setChart] = useState<Chart | null>(null)
+  const [mounted, setMounted] = useState(false)
   const canvas = useRef<HTMLCanvasElement>(null)
   const legend = useRef<HTMLUListElement>(null)
   const { theme } = useTheme()
   const darkMode = theme === 'dark'
   const { tooltipTitleColor, tooltipBodyColor, tooltipBgColor, tooltipBorderColor } = chartColors  
 
+  useEffect(() => {
+    setMounted(true)
+  }, [])
+
   useEffect(() => {    
+    if (!mounted) return
     const ctx = canvas.current
-    if (!ctx) return
+    if (!ctx || !(ctx as any).isConnected || !ctx.ownerDocument) return
     
     const newChart = new Chart(ctx, {
       type: 'pie',
       data: data,
       options: {
+        responsive: true,
+        resizeDelay: 200,
         layout: {
           padding: {
             top: 8,
@@ -135,7 +143,7 @@ export default function PieChart({
     })
     setChart(newChart)
     return () => newChart.destroy()
-  }, [])
+  }, [mounted])
 
   useEffect(() => {
     if (!chart) return

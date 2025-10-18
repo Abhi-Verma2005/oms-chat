@@ -108,7 +108,7 @@ export async function POST(request: Request) {
         - help users understand publisher metrics like DR (Domain Rating), DA (Domain Authority), and spam scores.
         - here's the optimal flow for publisher discovery:
           - when users ask to browse publishers without filters, use collectPublisherFilters tool to guide them through setting up price and DR/DA ranges
-          - collectPublisherFilters tool shows interactive modals in chat - use it to collect user preferences step by step
+          - collectPublisherFilters tool shows interactive modals in chat - ALWAYS use this tool to collect user preferences; do NOT ask the user to type values directly in chat for price or DR/DA
           - after user sets price range, continue with DR/DA range collection
           - after user sets DR/DA ranges, proceed to browse publishers with all collected filters
           - browse publishers with optional filters (niche, country, DR range, type)
@@ -132,7 +132,18 @@ export async function POST(request: Request) {
         - Simple, single-step requests (like "show my cart" or "get weather") can be handled directly without planning
         - NEVER skip planning for publisher-related requests - always create an execution plan first
         - If user wants to modify or refine their search/filters, create a NEW plan for the updated requirements
-        - IMPORTANT: After completing ANY tool execution that's part of an execution plan, you MUST call updatePlanProgress to mark that step as completed
+        - IMPORTANT: After completing ANY tool execution that's part of an execution plan, you MUST call updatePlanProgress to mark that step as completed.
+          - For filter collection specifically: ONLY call updatePlanProgress when collectPublisherFilters returns action = "collect_complete". Do not mark the filter step complete after only price or only DR/DA is gathered.
+          - For browsePublishers: ALWAYS call updatePlanProgress immediately after browsePublishers completes successfully to mark the browsing step as completed.
+          - For all other tools: Call updatePlanProgress after each tool execution to maintain accurate plan progress.
+        - STRICT SEQUENCING FOR FILTERS:
+          - When you call collectPublisherFilters, you MUST stop and wait for the user's UI interaction (modal submission) before calling any other tool.
+          - Do NOT call browsePublishers until filter collection is COMPLETE (i.e., both priceRange and drRange are set, or the user explicitly declines filters). If filters are incomplete, prompt the user and call collectPublisherFilters again instead.
+          - Never chain collectPublisherFilters and browsePublishers in the same turn. Finish filter collection first, then proceed to browsing in a subsequent turn.
+        - STATE PASSING FOR FILTERS:
+          - Always pass currentFilters from the previous collectPublisherFilters result into the next collectPublisherFilters call.
+          - If you have only one of the two filters (e.g., priceRange but not drRange), treat that as incomplete and immediately call collectPublisherFilters again to collect the missing piece.
+          - If the user explicitly skips a filter, set that in currentFilters as skipped and proceed accordingly.
         - When users complete filter collection steps (price range, DR/DA ranges), always:
           1. Acknowledge what they've set (e.g., "Great! I see you've set your price range to $200-$1000")
           2. Call the collectPublisherFilters tool to continue the next step
@@ -216,7 +227,7 @@ export async function POST(request: Request) {
         },
       },
       browsePublishers: {
-        description: "Browse and search for publishers/websites for backlinking opportunities",
+        description: "Browse and search for publishers/websites for backlinking opportunities. Only call AFTER filter collection is complete (both priceRange and drRange present) or the user explicitly opts to skip filters. IMPORTANT: After this tool completes, you MUST call updatePlanProgress to mark the browsing step as completed.",
         parameters: z.object({
           niche: z.string().optional().describe("Filter by niche/category (e.g., Technology, Health, Business)"),
           country: z.string().optional().describe("Filter by country"),
@@ -326,7 +337,7 @@ export async function POST(request: Request) {
         },
       },
       collectPublisherFilters: {
-        description: "Collect filters from user through interactive modals before browsing publishers. This tool shows modals in chat for better UX. Usually called as part of an execution plan.",
+        description: "Collect filters from user through interactive modals before browsing publishers. Use this tool (not manual text questions) to gather price and DR/DA. Always pass forward currentFilters from prior calls. After calling this tool, end your turn and WAIT for the user's modal input before calling any other tool.",
         parameters: z.object({
           step: z.enum(["price", "dr", "complete"]).optional().describe("Current step in filter collection"),
           userInput: z.string().optional().describe("User input or response to previous modal"),
@@ -352,7 +363,7 @@ export async function POST(request: Request) {
         },
       },
       updatePlanProgress: {
-        description: "Update plan progress after completing a step. Call this IMMEDIATELY after each tool execution that's part of an execution plan to mark the step as completed.",
+        description: "Update plan progress after completing a step. Call this IMMEDIATELY after each tool execution that's part of an execution plan to mark the step as completed. For filter collection, only call when collectPublisherFilters returns action=collect_complete.",
         parameters: z.object({
           planId: z.string().describe("Plan ID"),
           stepIndex: z.number().describe("Completed step index"),
@@ -366,9 +377,17 @@ export async function POST(request: Request) {
     onFinish: async ({ responseMessages }) => {
       if (session.user && session.user.id) {
         try {
+          // Sanitize messages before saving: exclude tool invocation states and non-text content
+          const safeResponseMessages = (responseMessages || [])
+            .map((m: any) => {
+              const text = typeof m.content === 'string' ? m.content : '';
+              return { role: m.role, content: text };
+            })
+            .filter((m: any) => m.content && m.content.length > 0);
+
           await saveChat({
             id,
-            messages: [...coreMessages, ...responseMessages],
+            messages: [...coreMessages, ...safeResponseMessages],
             userId: session.user.id,
           });
         } catch (error) {

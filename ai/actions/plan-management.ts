@@ -50,7 +50,12 @@ Available tools:
 Context: ${JSON.stringify(context)}
 
 Break the request into clear, sequential steps. Each step should be one tool call.
-For multi-step inputs (like filter collection), create ONE step that will handle all inputs.`,
+For multi-step inputs (like filter collection), create ONE step that will handle all inputs.
+
+STRICT SEQUENCING RULES:
+- If the request involves browsing publishers and filters are not yet fully collected (both priceRange and drRange), the FIRST actionable step MUST be collectPublisherFilters. Do not include a browsePublishers step until after that.
+- Do NOT schedule collectPublisherFilters and browsePublishers in the same turn. The plan can list them as consecutive steps, but the browsing step should be strictly after filter completion.
+ - If the user explicitly says to skip a filter, mark it as skipped and proceed. Only consider filter collection complete when both filters are set or explicitly skipped.`,
     schema: PlanSchema
   });
 

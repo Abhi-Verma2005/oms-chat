@@ -1,0 +1,75 @@
+---
+alwaysApply: true
+description: Cursor-inspired design rules for colors, typography, components, and layout. Always apply to generated frontend code.
+---
+# Cursor-inspired Design Rules
+
+## Color Palette
+- **primary-bg**: `#0B0F14` — main app background (deep neutral)
+- **surface-0**: `#111418` — base surface (cards, chat bubbles base)
+- **surface-1**: `#161A20` — elevated surface (hover/active states)
+- **surface-2**: `#1A1F24` — high elevation surfaces, side panels
+- **border-light**: `#2A2F36` — subtle hairline borders
+- **border-strong**: `#39414B` — stronger dividers on hover/active
+- **text-primary**: `#E5E7EB` — primary foreground
+- **text-secondary**: `#B7BEC8` — secondary/label text
+- **text-muted**: `#8A93A1` — meta text, placeholders
+- **accent**: `#7C3AED` — accent violet for CTAs, focus, highlights
+- **accent-weak**: `#5B21B6` — darker violet for pressed/active
+- **accent-contrast**: `#EDE9FE` — light violet for badges on dark
+- **success**: `#10B981` — confirmations, success states
+- **warning**: `#F59E0B` — cautions, limits
+- **danger**: `#EF4444` — destructive, errors
+- **info**: `#22D3EE` — informational hints
+- **overlay**: `#0B0F14CC` — 80% overlay for modals/sheets
+- **scrim**: `#0B0F1499` — 60% overlay for subtle depth
+
+Guidelines:
+- Prefer low-contrast borders (`border-light`). Use `border-strong` only on focus/active.
+- Use `accent` for primary actions only; otherwise rely on neutrals to reduce noise.
+
+## Typography
+- **Font family**: System UI / Inter / Geist-like sans
+  - Stack: `ui-sans-serif, system-ui, -apple-system, Segoe UI, Inter, Geist, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"`
+- **Weights**: 400 (Regular), 500 (Medium), 600 (Semibold)
+- **Hierarchy**:
+  - Title/Section: 14–16px, 600, `text-primary`
+  - Body/Chat text: 13–14px, 400, `text-primary`
+  - Secondary labels: 12–13px, 500, `text-secondary`
+  - Meta/Caption/Code meta: 11–12px, 400, `text-muted`
+- **Code**: Geist Mono / Menlo / SFMono at 12–13px, line-height 1.6, `surface-1` background
+
+## Components & Shapes
+- **Cards**: radius 8px, background `surface-0`, 1px border `border-light`, hover `surface-1` with subtle shadow `0 1px 0 rgba(0,0,0,0.25)`
+- **Chat bubbles**: same as cards; assistant uses slight `accent` glow on left bar (2px) for identity, user bubbles neutral
+- **Inputs**: background `surface-0`, border `border-light`, radius 8px, focus ring 1px `accent` outside border; placeholder `text-muted`
+- **Buttons**:
+  - Primary: background `accent`, text `#FFFFFF`, hover `accent-weak`, focus ring `accent`
+  - Secondary: background `surface-0`, border `border-light`, text `text-primary`, hover `surface-1`
+  - Destructive: background `danger`, text `#FFFFFF`
+  - Sizes: xs 28–30px, sm 32px, md 36px; horizontal padding 10–14px
+- **Badges**: pill radius 9999px, background `accent-contrast`, text `accent`, border transparent
+- **Scroll areas**: thin track, thumb `#4B5563` at 40% opacity; on hover increase to 70%
+- **Sheets/Modals**: backdrop `overlay`, surface `surface-0`, radius 12px, border `border-strong`
+- **Dividers**: 1px `border-light`; prefer spacing over heavy lines
+
+Spacing scale (px): 4, 6, 8, 12, 16, 20, 24, 32. Use 12/16 as primary rhythm between stacked blocks.
+
+## Layout & Composition
+- **Structure**: Fixed left sidebar (240–300px) + fluid content. Right panel as optional sheet/side drawer.
+- **Padding**: Container padding 16–24px; cards 12–16px; chat row gap 12–16px.
+- **Alignment**: Use 12px baseline grid; center align icons and text within 24px controls.
+- **Rhythm**: Dense but breathable; emphasize vertical spacing more than horizontal.
+- **States**: Hover elevates to `surface-1`; focus adds 1px `accent` ring; active shifts background toward `surface-2`.
+
+## Theme Feel
+- Minimal, professional dark-neutral with subtle violet accents, soft elevation, hairline borders, and rounded corners.
+
+---
+
+When generating frontend code or components in this project, always apply this visual system. Do not invent new colors or spacing units unless absolutely required.
+
+---
+
+One-line summary: Professional dark-neutral chat UI with subtle violet accents, hairline borders, and rounded corners.
+

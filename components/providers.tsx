@@ -6,6 +6,7 @@ import { ThemeProvider } from "./custom/theme-provider";
 import { CartProvider } from "../contexts/cart-context";
 import { SplitScreenProvider } from "../contexts/SplitScreenProvider";
 import { UserInfoProvider } from "../contexts/UserInfoProvider";
+import { WebSocketProvider } from "../contexts/websocket-context";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   return (
@@ -16,13 +17,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
         enableSystem={false}
         disableTransitionOnChange={false}
       >
-        <SplitScreenProvider>
-          <UserInfoProvider>
-            <CartProvider>
-              {children}
-            </CartProvider>
-          </UserInfoProvider>
-        </SplitScreenProvider>
+        <WebSocketProvider>
+          <SplitScreenProvider>
+            <UserInfoProvider>
+              <CartProvider>
+                {children}
+              </CartProvider>
+            </UserInfoProvider>
+          </SplitScreenProvider>
+        </WebSocketProvider>
       </ThemeProvider>
     </SessionProvider>
   );

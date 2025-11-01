@@ -55,16 +55,27 @@ export function PlanDisplay({
   const totalSteps = (currentPlan.steps || []).length;
 
   return (
-    <div className="bg-card border border-border rounded-lg p-4 my-4 hover:bg-card/80 transition-all duration-200 hover:shadow-md hover:border-ui-teal/50 w-fit max-w-full">
+    <div className={`relative bg-card rounded-lg p-4 my-4 hover:bg-card/80 transition-all duration-200 hover:shadow-md w-fit max-w-full ${
+      !showContent ? 'border-2 border-border' : 'border border-border'
+    }`}>
+      {/* Border - Loading or Static */}
+      {!showContent && (
+        <div className="absolute inset-0 rounded-lg pointer-events-none overflow-hidden">
+          <div 
+            className="absolute inset-0"
+            style={{
+              background: 'linear-gradient(90deg, transparent 0%, rgb(75, 85, 99) 50%, transparent 100%)',
+              backgroundSize: '200% 100%',
+              animation: 'border-light-border 2s ease-in-out infinite'
+            }}
+          ></div>
+          <div className="absolute inset-[2px] rounded-lg bg-card"></div>
+        </div>
+      )}
+      
       {/* Loading State */}
       {!showContent && (
-        <div className="relative overflow-hidden">
-          {/* Animated border light */}
-          <div className="absolute inset-0 rounded-lg">
-            <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-gray-600/50 to-transparent opacity-0 animate-[border-light_2s_ease-in-out_infinite]"></div>
-            <div className="absolute inset-px rounded-lg bg-card"></div>
-          </div>
-          
+        <div className="relative">
           <div className="relative flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div className="size-4 bg-gray-600 rounded flex items-center justify-center">

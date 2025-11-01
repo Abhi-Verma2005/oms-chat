@@ -16,6 +16,15 @@
   }
 }
 
+@keyframes border-light-border {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
 @keyframes typing-cursor {
   0%, 50% {
     opacity: 1;

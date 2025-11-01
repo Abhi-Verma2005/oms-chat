@@ -6,7 +6,7 @@ config({
 });
 
 export default defineConfig({
-  schema: "./lib/external-schema.ts",
+  schema: "./lib/drizzle-external/schema.ts",
   out: "./lib/drizzle-external",
   dialect: "postgresql",
   dbCredentials: {

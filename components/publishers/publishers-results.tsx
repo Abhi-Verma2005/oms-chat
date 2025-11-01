@@ -113,6 +113,19 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
     }
   };
 
+  // Safety check
+  if (!results.publishers || !Array.isArray(results.publishers)) {
+    return (
+      <div className="w-full p-8 text-foreground">
+        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
+          <p className="text-yellow-800 dark:text-yellow-300 text-sm font-medium">
+            ⚠️ No publisher data available
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div 
       className="w-full space-y-8 p-8 text-foreground"

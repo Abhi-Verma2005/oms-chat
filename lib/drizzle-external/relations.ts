@@ -1,6 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-
-import { users, sessions, authenticators, orders, transactions, savedViews, roles, rolePermissions, permissions, userRoles, onboardingProfiles, notificationTypes, notifications, userNotificationReads, searchInterests, userActivities, orderItems, caseStudies, keywordData, serpFeatures, monthlyData, feedback, wishlists, wishlistItems, userTags, tags, orderTags, orderFilters, bonusRules, bonusGrants, accounts, projects, projectCompetitors, products, productFeatures, productTags, reviews, reviewTags, reviewProducts } from "./schema";
+import { users, sessions, authenticators, orders, transactions, savedViews, projects, roles, rolePermissions, permissions, userRoles, onboardingProfiles, notificationTypes, notifications, userNotificationReads, searchInterests, orderItems, caseStudies, keywordData, serpFeatures, monthlyData, userActivities, feedback, wishlists, wishlistItems, userTags, tags, orderTags, orderFilters, bonusRules, bonusGrants, accounts, projectCompetitors, userInteractions, products, productFeatures, productTags, reviews, reviewTags, reviewProducts, userContext, contextUpdates, userProfiles, userAiInsights, aiInsightUpdates, userContextProfiles, userInteractionEmbeddings, projectFilterPreferences, userPersonality, userTopicClusters, crossChatReferences, chatSessions, semanticCache, ragPerformanceMetrics, userKnowledgeBase, userDocuments, documentChunkMetadata } from "./schema";
 
 export const sessionsRelations = relations(sessions, ({one}) => ({
 	user: one(users, {
@@ -17,8 +16,8 @@ export const usersRelations = relations(users, ({many}) => ({
 	onboardingProfiles: many(onboardingProfiles),
 	userNotificationReads: many(userNotificationReads),
 	searchInterests: many(searchInterests),
-	userActivities: many(userActivities),
 	orders: many(orders),
+	userActivities: many(userActivities),
 	feedbacks: many(feedback),
 	wishlists: many(wishlists),
 	userTags: many(userTags),
@@ -26,6 +25,21 @@ export const usersRelations = relations(users, ({many}) => ({
 	bonusGrants: many(bonusGrants),
 	accounts: many(accounts),
 	projects: many(projects),
+	userInteractions: many(userInteractions),
+	userContexts: many(userContext),
+	userProfiles: many(userProfiles),
+	userAiInsights: many(userAiInsights),
+	userContextProfiles: many(userContextProfiles),
+	userInteractionEmbeddings: many(userInteractionEmbeddings),
+	projectFilterPreferences: many(projectFilterPreferences),
+	userPersonalities: many(userPersonality),
+	userTopicClusters: many(userTopicClusters),
+	crossChatReferences: many(crossChatReferences),
+	chatSessions: many(chatSessions),
+	semanticCaches: many(semanticCache),
+	ragPerformanceMetrics: many(ragPerformanceMetrics),
+	userKnowledgeBases: many(userKnowledgeBase),
+	userDocuments: many(userDocuments),
 }));
 
 export const authenticatorsRelations = relations(authenticators, ({one}) => ({
@@ -49,6 +63,10 @@ export const ordersRelations = relations(orders, ({one, many}) => ({
 		fields: [orders.userId],
 		references: [users.id]
 	}),
+	project: one(projects, {
+		fields: [orders.projectId],
+		references: [projects.id]
+	}),
 	orderTags: many(orderTags),
 }));
 
@@ -57,6 +75,24 @@ export const savedViewsRelations = relations(savedViews, ({one}) => ({
 		fields: [savedViews.userId],
 		references: [users.id]
 	}),
+	project: one(projects, {
+		fields: [savedViews.projectId],
+		references: [projects.id]
+	}),
+}));
+
+export const projectsRelations = relations(projects, ({one, many}) => ({
+	savedViews: many(savedViews),
+	searchInterests: many(searchInterests),
+	orders: many(orders),
+	userActivities: many(userActivities),
+	wishlists: many(wishlists),
+	user: one(users, {
+		fields: [projects.userId],
+		references: [users.id]
+	}),
+	projectCompetitors: many(projectCompetitors),
+	projectFilterPreferences: many(projectFilterPreferences),
 }));
 
 export const rolePermissionsRelations = relations(rolePermissions, ({one}) => ({
@@ -125,12 +161,9 @@ export const searchInterestsRelations = relations(searchInterests, ({one}) => ({
 		fields: [searchInterests.userId],
 		references: [users.id]
 	}),
-}));
-
-export const userActivitiesRelations = relations(userActivities, ({one}) => ({
-	user: one(users, {
-		fields: [userActivities.userId],
-		references: [users.id]
+	project: one(projects, {
+		fields: [searchInterests.projectId],
+		references: [projects.id]
 	}),
 }));
 
@@ -168,6 +201,17 @@ export const monthlyDataRelations = relations(monthlyData, ({one}) => ({
 	}),
 }));
 
+export const userActivitiesRelations = relations(userActivities, ({one}) => ({
+	user: one(users, {
+		fields: [userActivities.userId],
+		references: [users.id]
+	}),
+	project: one(projects, {
+		fields: [userActivities.projectId],
+		references: [projects.id]
+	}),
+}));
+
 export const feedbackRelations = relations(feedback, ({one}) => ({
 	user: one(users, {
 		fields: [feedback.userId],
@@ -175,18 +219,22 @@ export const feedbackRelations = relations(feedback, ({one}) => ({
 	}),
 }));
 
-export const wishlistsRelations = relations(wishlists, ({one, many}) => ({
-	user: one(users, {
-		fields: [wishlists.userId],
-		references: [users.id]
-	}),
-	wishlistItems: many(wishlistItems),
-}));
-
 export const wishlistItemsRelations = relations(wishlistItems, ({one}) => ({
 	wishlist: one(wishlists, {
 		fields: [wishlistItems.wishlistId],
 		references: [wishlists.id]
+	}),
+}));
+
+export const wishlistsRelations = relations(wishlists, ({one, many}) => ({
+	wishlistItems: many(wishlistItems),
+	user: one(users, {
+		fields: [wishlists.userId],
+		references: [users.id]
+	}),
+	project: one(projects, {
+		fields: [wishlists.projectId],
+		references: [projects.id]
 	}),
 }));
 
@@ -253,18 +301,17 @@ export const accountsRelations = relations(accounts, ({one}) => ({
 	}),
 }));
 
-export const projectsRelations = relations(projects, ({one, many}) => ({
-	user: one(users, {
-		fields: [projects.userId],
-		references: [users.id]
-	}),
-	projectCompetitors: many(projectCompetitors),
-}));
-
 export const projectCompetitorsRelations = relations(projectCompetitors, ({one}) => ({
 	project: one(projects, {
 		fields: [projectCompetitors.projectId],
 		references: [projects.id]
+	}),
+}));
+
+export const userInteractionsRelations = relations(userInteractions, ({one}) => ({
+	user: one(users, {
+		fields: [userInteractions.userId],
+		references: [users.id]
 	}),
 }));
 
@@ -316,5 +363,131 @@ export const reviewProductsRelations = relations(reviewProducts, ({one}) => ({
 	product: one(products, {
 		fields: [reviewProducts.productId],
 		references: [products.id]
+	}),
+}));
+
+export const contextUpdatesRelations = relations(contextUpdates, ({one}) => ({
+	userContext: one(userContext, {
+		fields: [contextUpdates.userContextId],
+		references: [userContext.id]
+	}),
+}));
+
+export const userContextRelations = relations(userContext, ({one, many}) => ({
+	contextUpdates: many(contextUpdates),
+	user: one(users, {
+		fields: [userContext.userId],
+		references: [users.id]
+	}),
+}));
+
+export const userProfilesRelations = relations(userProfiles, ({one}) => ({
+	user: one(users, {
+		fields: [userProfiles.userId],
+		references: [users.id]
+	}),
+}));
+
+export const userAiInsightsRelations = relations(userAiInsights, ({one, many}) => ({
+	user: one(users, {
+		fields: [userAiInsights.userId],
+		references: [users.id]
+	}),
+	aiInsightUpdates: many(aiInsightUpdates),
+}));
+
+export const aiInsightUpdatesRelations = relations(aiInsightUpdates, ({one}) => ({
+	userAiInsight: one(userAiInsights, {
+		fields: [aiInsightUpdates.userAiInsightsId],
+		references: [userAiInsights.id]
+	}),
+}));
+
+export const userContextProfilesRelations = relations(userContextProfiles, ({one}) => ({
+	user: one(users, {
+		fields: [userContextProfiles.userId],
+		references: [users.id]
+	}),
+}));
+
+export const userInteractionEmbeddingsRelations = relations(userInteractionEmbeddings, ({one}) => ({
+	user: one(users, {
+		fields: [userInteractionEmbeddings.userId],
+		references: [users.id]
+	}),
+}));
+
+export const projectFilterPreferencesRelations = relations(projectFilterPreferences, ({one}) => ({
+	user: one(users, {
+		fields: [projectFilterPreferences.userId],
+		references: [users.id]
+	}),
+	project: one(projects, {
+		fields: [projectFilterPreferences.projectId],
+		references: [projects.id]
+	}),
+}));
+
+export const userPersonalityRelations = relations(userPersonality, ({one}) => ({
+	user: one(users, {
+		fields: [userPersonality.userId],
+		references: [users.id]
+	}),
+}));
+
+export const userTopicClustersRelations = relations(userTopicClusters, ({one}) => ({
+	user: one(users, {
+		fields: [userTopicClusters.userId],
+		references: [users.id]
+	}),
+}));
+
+export const crossChatReferencesRelations = relations(crossChatReferences, ({one}) => ({
+	user: one(users, {
+		fields: [crossChatReferences.userId],
+		references: [users.id]
+	}),
+}));
+
+export const chatSessionsRelations = relations(chatSessions, ({one}) => ({
+	user: one(users, {
+		fields: [chatSessions.userId],
+		references: [users.id]
+	}),
+}));
+
+export const semanticCacheRelations = relations(semanticCache, ({one}) => ({
+	user: one(users, {
+		fields: [semanticCache.userId],
+		references: [users.id]
+	}),
+}));
+
+export const ragPerformanceMetricsRelations = relations(ragPerformanceMetrics, ({one}) => ({
+	user: one(users, {
+		fields: [ragPerformanceMetrics.userId],
+		references: [users.id]
+	}),
+}));
+
+export const userKnowledgeBaseRelations = relations(userKnowledgeBase, ({one}) => ({
+	user: one(users, {
+		fields: [userKnowledgeBase.userId],
+		references: [users.id]
+	}),
+}));
+
+export const userDocumentsRelations = relations(userDocuments, ({one, many}) => ({
+	user: one(users, {
+		fields: [userDocuments.userId],
+		references: [users.id]
+	}),
+	documentChunkMetadata: many(documentChunkMetadata),
+}));
+
+export const documentChunkMetadataRelations = relations(documentChunkMetadata, ({one}) => ({
+	userDocument: one(userDocuments, {
+		fields: [documentChunkMetadata.documentId],
+		references: [userDocuments.id]
 	}),
 }));

@@ -2,7 +2,7 @@
 
 import { Attachment, ChatRequestOptions, CreateMessage, Message } from "ai";
 import { motion } from "framer-motion";
-import React, {
+import {
   useRef,
   useEffect,
   useState,

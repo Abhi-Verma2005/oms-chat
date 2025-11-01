@@ -8,7 +8,6 @@ import { ReactNode, useEffect, useRef, useCallback, useMemo, useState } from "re
 import { BotIcon, UserIcon } from "./icons";
 import Logo from "./logo";
 import { Markdown } from "./markdown";
-import { PlanDisplay } from "./plan-display";
 import { PreviewAttachment } from "./preview-attachment";
 import { Weather } from "./weather";
 import { useCart } from "../../contexts/cart-context";
@@ -17,108 +16,8 @@ import CartManagementResults from "../oms/cart-management-results";
 import { OrdersDisplayResults } from "../oms/orders-display-results";
 import StripePaymentComponent from "../oms/stripe-payment-component";
 import { PublishersResults } from "../publishers/publishers-results";
-import { DRRangeEmbed } from "../ui/dr-range-embed";
-import { PriceRangeEmbed } from "../ui/price-range-embed";
+import { ToolInvocationItem } from "../tools/use-tool-invocation";
 
-// Checkout Preview Component
-function CheckoutPreview({ result, showInRightPanel }: { result: any; showInRightPanel: (toolName: string, result: any) => void }) {
-  const { state: cartState } = useCart();
-  
-  // Use live cart data instead of result data for real-time updates
-  const totalItems = cartState.items.reduce((sum, item) => sum + item.quantity, 0);
-  const totalPrice = cartState.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
-  
-  // Memoize the items array to prevent unnecessary re-renders and payment intent recreations
-  const stripeItems = useMemo(() => 
-    cartState.items.map((item: any) => ({
-      id: item.id,
-      name: item.name,
-      price: item.price,
-      quantity: item.quantity
-    })), 
-    [cartState.items]
-  );
-  
-  return (
-    <div className="bg-card border border-border rounded-lg p-4 hover:bg-card/80 transition-all duration-200 hover:shadow-md hover:border-ui-teal/50 w-fit max-w-full">
-      <div className="flex items-center justify-between gap-3 mb-3">
-        <div className="flex items-center gap-2">
-          <div className="p-1 bg-ui-teal/10 rounded">
-            <div className="size-3 bg-ui-teal rounded-sm flex items-center justify-center">
-              <div className="size-1.5 bg-white rounded-full"></div>
-            </div>
-          </div>
-          <h3 className="text-foreground font-medium text-sm whitespace-nowrap">Checkout</h3>
-        </div>
-      </div>
-      
-      {/* Order Preview */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-foreground">{totalItems} items</span>
-          <span className="text-xs text-muted-foreground">Order Total</span>
-        </div>
-        
-        <div className="space-y-1">
-          {cartState.items.slice(0, 2).map((item: any, index: number) => (
-            <div key={index} className="flex justify-between text-xs">
-              <span className="text-muted-foreground">{item.name} × {item.quantity}</span>
-              <span className="text-foreground">${(item.price * item.quantity).toFixed(2)}</span>
-            </div>
-          ))}
-          {cartState.items.length > 2 && (
-            <div className="text-xs text-muted-foreground">
-              +{cartState.items.length - 2} more items
-            </div>
-          )}
-        </div>
-        
-        <div className="border-t border-border pt-2">
-          <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-foreground">Total</span>
-            <span className="text-lg font-bold text-foreground">${totalPrice.toFixed(2)}</span>
-          </div>
-        </div>
-        
-        {/* Edit Button */}
-        <div className="pt-2">
-          <button
-            onClick={() => {
-              console.log('🛒 Opening cart management in sidebar');
-              showInRightPanel('viewCart', { 
-                summary: { totalItems, totalPrice, totalQuantity: totalItems },
-                cartData: { items: cartState.items, totalItems, totalPrice, lastUpdated: new Date() }
-              });
-            }}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs bg-muted hover:bg-muted/80 text-foreground rounded-md transition-colors font-medium"
-          >
-            Edit Order
-          </button>
-        </div>
-        
-        {/* Stripe Payment Component */}
-        <div className="pt-3 border-t border-border">
-          <div className="bg-ui-teal/10 border border-ui-teal/30 rounded-lg p-3 mb-3">
-            <p className="text-ui-teal text-xs font-medium">
-              Ready to process payment! Complete your purchase below.
-            </p>
-          </div>
-          
-          <StripePaymentComponent
-            amount={totalPrice}
-            items={stripeItems}
-            onPaymentSuccess={(paymentIntent) => {
-              console.log('Payment successful:', paymentIntent);
-            }}
-            onPaymentError={(error) => {
-              console.error('Payment error:', error);
-            }}
-          />
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export const Message = ({
   chatId,
@@ -130,6 +29,7 @@ export const Message = ({
   isLastMessage = false,
   isGenerating = false,
   onAppendMessage,
+  loadingTools,
 }: {
   chatId: string;
   role: string;
@@ -140,6 +40,7 @@ export const Message = ({
   isLastMessage?: boolean;
   isGenerating?: boolean;
   onAppendMessage?: (message: { role: 'user'; content: string }) => Promise<string | null | undefined>;
+  loadingTools?: Set<string>;
 }) => {
   const { setRightPanelContent, closeRightPanel } = useSplitScreen();
   const { addItem, removeItem, getCartItemIds, state: cartState, clearCart } = useCart();
@@ -291,7 +192,7 @@ export const Message = ({
         <StripePaymentComponent
           amount={cartState.items.reduce((sum, item) => sum + (item.price * item.quantity), 0) * 1.08}
           items={cartItems}
-          onPaymentSuccess={(paymentIntent) => {
+          onPaymentSuccess={(paymentIntent: unknown) => {
             console.log('Payment successful:', paymentIntent);
             // Clear the cart after successful payment
             clearCart();
@@ -300,7 +201,7 @@ export const Message = ({
             // Auto-close sidebar after successful payment
             setTimeout(() => closeRightPanel(), 1000);
           }}
-          onPaymentError={(error) => {
+          onPaymentError={(error: unknown) => {
             console.error('Payment error:', error);
           }}
         />
@@ -473,283 +374,41 @@ export const Message = ({
         {toolInvocations && (
           <div className="flex flex-col gap-3 mt-4">
             {toolInvocations.map((toolInvocation) => {
-              const { toolName, toolCallId, state } = toolInvocation;
-              const displayName = toolName.replace(/([A-Z])/g, ' $1').trim()
-                .split(' ')
-                .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-                .join(' ');
+              const { toolName } = toolInvocation;
+              const isLoading = loadingTools?.has(toolName) ?? false;
 
-              if (state === "result") {
-                const { result } = toolInvocation;
+              // Additional props for specific renderers
+              const additionalProps: Record<string, unknown> = {};
 
-                // Special handling for browsePublishers to show a more informative summary
-                if (toolName === "browsePublishers") {
-                  const { publishers, metadata, filters } = result;
-                  const appliedFilters = filters ? Object.entries(filters).filter(([_, value]) => value).map(([key, value]) => `${key}: ${value}`) : [];
-                  
-                  return (
-                    <div 
-                      key={toolCallId} 
-                      onClick={() => {
-                        console.log('🔍 Opening sidebar with browsePublishers result');
-                        showInRightPanel(toolName, result);
-                      }}
-                      className="bg-card border border-border rounded-lg p-4 hover:bg-card/80 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-ui-teal/50 w-fit max-w-full"
-                    >
-                      <div className="flex items-center justify-between gap-3 mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="p-1 bg-ui-teal/10 rounded">
-                            <div className="size-3 bg-ui-teal rounded-sm flex items-center justify-center">
-                              <div className="size-1.5 bg-white rounded-full"></div>
-                            </div>
-                          </div>
-                          <h3 className="text-foreground font-medium text-sm whitespace-nowrap">Publisher Search Results</h3>
-                        </div>
-                        <span className="text-muted-foreground text-xs">
-                          Expand →
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-2 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-foreground">{metadata.totalCount}</span>
-                          <span>publishers found</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-4">
-                          <span>Avg DR: <span className="font-medium text-foreground">{metadata.averageDR}</span></span>
-                          <span>Avg DA: <span className="font-medium text-foreground">{metadata.averageDA}</span></span>
-                          <span>Price: <span className="font-medium text-foreground">${metadata.priceRange.min}-${metadata.priceRange.max}</span></span>
-                        </div>
-                        
-                        {appliedFilters.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            <span className="text-muted-foreground">Filters:</span>
-                            {appliedFilters.slice(0, 2).map((filter, index) => (
-                              <span key={index} className="bg-muted px-2 py-0.5 rounded text-xs">{filter}</span>
-                            ))}
-                            {appliedFilters.length > 2 && (
-                              <span className="text-muted-foreground">+{appliedFilters.length - 2} more</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                }
-
-                // Special handling for viewCart to show a cute cart summary
-                if (toolName === "viewCart") {
-                  const { summary, cartData } = result;
-                  
-                  return (
-                    <div 
-                      key={toolCallId} 
-                      onClick={() => {
-                        console.log('🛒 Opening sidebar with viewCart result');
-                        showInRightPanel(toolName, result);
-                      }}
-                      className="bg-card border border-border rounded-lg p-4 hover:bg-card/80 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-ui-teal/50 w-fit max-w-full"
-                    >
-                      <div className="flex items-center justify-between gap-3 mb-2">
-                        <div className="flex items-center gap-2">
-                          <div className="p-1 bg-ui-teal/10 rounded">
-                            <div className="size-3 bg-ui-teal rounded-sm flex items-center justify-center">
-                              <div className="size-1.5 bg-white rounded-full"></div>
-                            </div>
-                          </div>
-                          <h3 className="text-foreground font-medium text-sm whitespace-nowrap">Shopping Cart</h3>
-                        </div>
-                        <span className="text-muted-foreground text-xs">
-                          Expand →
-                        </span>
-                      </div>
-                      
-                      <div className="space-y-2 text-xs text-muted-foreground">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-foreground">{summary.totalItems}</span>
-                          <span>items in cart</span>
-                        </div>
-                        
-                        <div className="flex items-center gap-4">
-                          <span>Total: <span className="font-medium text-foreground">${summary.totalPrice.toFixed(2)}</span></span>
-                          <span>Quantity: <span className="font-medium text-foreground">{summary.totalQuantity}</span></span>
-                        </div>
-                        
-                        {cartData.items.length > 0 && (
-                          <div className="flex flex-wrap gap-1">
-                            <span className="text-muted-foreground">Items:</span>
-                            {cartData.items.slice(0, 2).map((item: any, index: number) => (
-                              <span key={index} className="bg-muted px-2 py-0.5 rounded text-xs">
-                                {item.name} (${item.price})
-                              </span>
-                            ))}
-                            {cartData.items.length > 2 && (
-                              <span className="text-muted-foreground">+{cartData.items.length - 2} more</span>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  );
-                }
-
-                // Special handling for processPayment to show simple checkout preview
-                if (toolName === "processPayment") {
-                  return <CheckoutPreview key={toolCallId} result={result} showInRightPanel={showInRightPanel} />;
-                }
-
-                // Special handling for createExecutionPlan - show the plan as todo list
-                if (toolName === "createExecutionPlan") {
-                  const { planId, summary, steps, totalSteps, message } = result;
-                  console.log('🎯 createExecutionPlan result:', { planId, summary, steps, totalSteps, message });
-                  
-                  return (
-                    <div key={toolCallId}>
-                      <PlanDisplay 
-                        chatId={chatId}
-                        append={onAppendMessage}
-                        initialPlan={{
-                          id: planId,
-                          summary,
-                          steps: (steps || []).map((step: any, index: number) => ({
-                            id: `step-${index}`,
-                            stepIndex: index,
-                            description: step.description,
-                            toolName: step.toolName,
-                            status: 'pending'
-                          })),
-                          currentStepIndex: 0,
-                          totalSteps,
-                          status: 'active'
-                        }}
-                      />
-                    </div>
-                  );
-                }
-
-                // Special handling for updatePlanProgress - show updated plan as todo list
-                if (toolName === "updatePlanProgress") {
-                  const { planId, summary, steps, totalSteps, currentStepIndex, status, message } = result;
-                  console.log('🎯 updatePlanProgress result:', { planId, summary, steps, totalStepIndex: currentStepIndex, totalSteps, status, message });
-                  
-                  return (
-                    <div key={toolCallId}>
-                      <PlanDisplay 
-                        chatId={chatId}
-                        append={onAppendMessage}
-                        initialPlan={{
-                          id: planId,
-                          summary,
-                          steps: (steps || []).map((step: any, index: number) => ({
-                            id: step.id || `step-${index}`,
-                            stepIndex: step.stepIndex || index,
-                            description: step.description,
-                            toolName: step.toolName,
-                            status: step.status || (index < currentStepIndex ? 'completed' : 'pending')
-                          })),
-                          currentStepIndex,
-                          totalSteps,
-                          status
-                        }}
-                      />
-                    </div>
-                  );
-                }
-
-                // Special handling for collectPublisherFilters - show embedded input modal
-                if (toolName === "collectPublisherFilters") {
-                  const { action, message, collectedFilters } = result;
-                  
-                  if (action === "show_price_modal") {
-                    return (
-                      <div key={toolCallId} className="max-w-md">
-                        <PriceRangeEmbed
-                          onConfirm={handlePriceRangeConfirm}
-                          onSkip={handlePriceRangeSkip}
-                        />
-                      </div>
-                    );
-                  } else if (action === "show_dr_modal") {
-                    return (
-                      <div key={toolCallId} className="max-w-md">
-                        <DRRangeEmbed
-                          onConfirm={handleDRRangeConfirm}
-                          onSkip={handleDRRangeSkip}
-                        />
-                      </div>
-                    );
-                  } else if (action === "collect_complete") {
-                    return (
-                      <div key={toolCallId} className="bg-card border border-border rounded-lg p-4 max-w-md">
-                        <div className="flex items-center gap-2 mb-3">
-                          <div className="p-1.5 bg-green-100 dark:bg-green-900/30 rounded-md">
-                            <div className="size-4 bg-green-600 dark:bg-green-400 rounded-full flex items-center justify-center">
-                              <div className="size-2 bg-white rounded-full"></div>
-                            </div>
-                          </div>
-                          <div>
-                            <h3 className="text-sm font-semibold text-foreground">Filters Complete</h3>
-                            <p className="text-xs text-muted-foreground">Ready to search publishers</p>
-                          </div>
-                        </div>
-                        <div className="text-xs text-muted-foreground mb-3">
-                          {message}
-                        </div>
-                        <div className="flex gap-2">
-                          <button
-                            onClick={() => triggerFinalBrowseCall(collectedFilters)}
-                            className="flex-1 bg-purple-600 hover:bg-purple-700 text-white text-xs font-medium px-3 py-2 rounded-md transition-colors"
-                          >
-                            Search Publishers
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  }
-                  
-                  // Fallback for unknown actions
-                  return (
-                    <div key={toolCallId} className="bg-card border border-border rounded-lg p-3 max-w-md">
-                      <div className="text-sm text-muted-foreground">
-                        {message}
-                      </div>
-                    </div>
-                  );
-                }
-
-                return (
-                  <div 
-                    key={toolCallId} 
-                    onClick={() => showInRightPanel(toolName, result)}
-                    className="bg-card border border-border rounded-lg p-3 hover:bg-card/80 cursor-pointer transition-all duration-200 hover:shadow-md hover:border-ui-teal/50 w-fit max-w-full"
-                  >
-                    <div className="flex items-center justify-between gap-3">
-                      <h3 className="text-foreground font-medium text-sm whitespace-nowrap">{displayName}</h3>
-                      <span className="text-muted-foreground text-xs">→</span>
-                    </div>
-                  </div>
-                );
-              } else {
-                return (
-                  <div key={toolCallId} className="relative bg-card border border-border rounded-lg p-3 overflow-hidden w-fit max-w-full">
-                    {/* Animated border light */}
-                    <div className="absolute inset-0 rounded-lg">
-                      <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-transparent via-ui-teal/50 to-transparent opacity-0 animate-[border-light_2s_ease-in-out_infinite]"></div>
-                      <div className="absolute inset-px rounded-lg bg-card"></div>
-                    </div>
-                    
-                    <div className="relative flex items-center justify-between gap-3">
-                      <h3 className="text-foreground font-medium text-sm whitespace-nowrap">{displayName}</h3>
-                      <div className="flex items-center gap-2">
-                        <div className="size-2 bg-ui-teal rounded-full animate-pulse"></div>
-                        <div className="size-2 bg-ui-teal rounded-full animate-pulse" style={{ animationDelay: '0.2s' }}></div>
-                        <div className="size-2 bg-ui-teal rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-                      </div>
-                    </div>
-                  </div>
-                );
+              // Filter renderer needs specific handlers
+              if (toolName === "collectPublisherFilters") {
+                additionalProps.onPriceRangeConfirm = handlePriceRangeConfirm;
+                additionalProps.onPriceRangeSkip = handlePriceRangeSkip;
+                additionalProps.onDRRangeConfirm = handleDRRangeConfirm;
+                additionalProps.onDRRangeSkip = handleDRRangeSkip;
+                additionalProps.onFinalBrowseCall = triggerFinalBrowseCall;
               }
+
+              // Plan renderer needs chatId and append
+              if (toolName === "createExecutionPlan" || toolName === "updatePlanProgress") {
+                additionalProps.chatId = chatId;
+                additionalProps.onAppendMessage = onAppendMessage;
+              }
+
+              // Payment renderer needs showInRightPanel
+              if (toolName === "processPayment") {
+                additionalProps.showInRightPanel = showInRightPanel;
+              }
+
+              return (
+                <ToolInvocationItem
+                  key={toolInvocation.toolCallId}
+                  toolInvocation={toolInvocation}
+                  loading={isLoading}
+                  onExpand={showInRightPanel}
+                  additionalProps={additionalProps}
+                />
+              );
             })}
           </div>
         )}

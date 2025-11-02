@@ -1,4 +1,4 @@
-import { CoreMessage } from "ai";
+import { CoreMessage, Message } from "ai";
 import { notFound } from "next/navigation";
 
 import { auth } from "@/app/(auth)/auth";
@@ -15,10 +15,28 @@ export default async function Page({ params }: { params: any }) {
     notFound();
   }
 
+  // Check if messages are already in UI format (Message) with toolInvocations
+  // If so, use them directly; otherwise convert from CoreMessage format
+  const dbMessages = chatFromDb.messages as Array<Message | CoreMessage>;
+  
+  // Check if messages are already in Message format
+  // Message format has: id, role, content (string), optional toolInvocations
+  // CoreMessage format has: role, content (string or array of parts), no id
+  const isAlreadyMessageFormat = dbMessages.length > 0 && 
+    dbMessages.every(msg => 
+      'id' in msg && 
+      typeof msg.content === 'string' &&
+      'role' in msg
+    );
+  
+  const messages = isAlreadyMessageFormat
+    ? (dbMessages as Array<Message>) // Already in Message format, preserve toolInvocations with results
+    : convertToUIMessages(dbMessages as Array<CoreMessage>); // Convert from CoreMessage
+
   // type casting and converting messages to UI messages
   const chat: Chat = {
     ...chatFromDb,
-    messages: convertToUIMessages(chatFromDb.messages as Array<CoreMessage>),
+    messages,
   };
 
   const session = await auth();

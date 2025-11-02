@@ -15,6 +15,9 @@ export const chat = pgTable("Chat", {
   createdAt: timestamp("createdAt").notNull(),
   messages: json("messages").notNull(),
   userId: varchar("userId", { length: 255 }).notNull(), // External user ID from external database
+  title: varchar("title", { length: 255 }), // Chat title
+  summary: varchar("summary", { length: 2000 }), // Summarized older messages
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(), // Last update time
 });
 
 export type Chat = Omit<InferSelectModel<typeof chat>, "messages"> & {

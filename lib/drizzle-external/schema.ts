@@ -1,5 +1,5 @@
-import { pgTable, uniqueIndex, text, timestamp, foreignKey, integer, boolean, jsonb, index, doublePrecision, vector, unique, uuid, varchar, pgEnum } from "drizzle-orm/pg-core"
-  import { sql } from "drizzle-orm"
+import { sql } from "drizzle-orm";
+import { pgTable, uniqueIndex, text, timestamp, foreignKey, integer, boolean, jsonb, index, doublePrecision, vector, unique, uuid, varchar, pgEnum } from "drizzle-orm/pg-core";
 
 export const aiInsightUpdateType = pgEnum("AIInsightUpdateType", ['PERSONALITY_TRAITS', 'BEHAVIOR_PATTERNS', 'LEARNING_STYLE', 'EXPERTISE_LEVEL', 'CONVERSATION_TONE', 'COMMUNICATION_PATTERNS', 'TOPIC_INTERESTS', 'PAIN_POINTS', 'AI_METADATA', 'CONFIDENCE_SCORE', 'GENERAL'])
 export const activityCategory = pgEnum("ActivityCategory", ['AUTHENTICATION', 'NAVIGATION', 'ORDER', 'PAYMENT', 'CART', 'PROFILE', 'ADMIN', 'API', 'ERROR', 'OTHER', 'WISHLIST'])

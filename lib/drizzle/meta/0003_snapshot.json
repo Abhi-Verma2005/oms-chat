@@ -1,6 +1,6 @@
 {
-  "id": "0002_manual_schema_update",
-  "prevId": "0001_cuddly_kinsey_walden",
+  "id": "0003_add_chat_summary_fields",
+  "prevId": "0002_manual_schema_update",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -224,3 +224,4 @@
     "tables": {}
   }
 }
+

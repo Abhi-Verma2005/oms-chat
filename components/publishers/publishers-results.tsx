@@ -3,8 +3,6 @@
 import { Star, ExternalLink, TrendingUp, Heart, ShoppingCart } from "lucide-react";
 import { useState, useEffect } from "react";
 
-import { Button } from "../ui/button";
-
 interface PublisherData {
   id: string;
   website: string;
@@ -60,6 +58,15 @@ interface PublishersResultsProps {
 
 export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cartItems }: PublishersResultsProps) {
   const [wishlist, setWishlist] = useState<Set<string>>(new Set());
+  // Optimistic cart state - updates immediately for better UX
+  const [optimisticCartItems, setOptimisticCartItems] = useState<Set<string>>(new Set(cartItems || []));
+
+  // Sync optimistic state with actual cart items when they change
+  useEffect(() => {
+    if (cartItems) {
+      setOptimisticCartItems(new Set(cartItems));
+    }
+  }, [cartItems]);
 
   const toggleWishlist = (publisherId: string) => {
     setWishlist(prev => {
@@ -74,8 +81,20 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
   };
 
   const toggleCart = (publisher: PublisherData) => {
-    const isInCart = cartItems?.has(publisher.id) || false;
+    const isInCart = optimisticCartItems.has(publisher.id);
     
+    // Optimistically update UI immediately
+    setOptimisticCartItems(prev => {
+      const newSet = new Set(prev);
+      if (isInCart) {
+        newSet.delete(publisher.id);
+      } else {
+        newSet.add(publisher.id);
+      }
+      return newSet;
+    });
+    
+    // Then update the actual cart
     if (isInCart) {
       onRemoveFromCart?.(publisher.id);
     } else {
@@ -86,28 +105,28 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
   const getSpamColor = (level: string) => {
     switch (level) {
       case "Low":
-        return "bg-status-success text-white";
+        return "bg-green-600 dark:bg-green-700 text-white";
       case "Medium":
-        return "bg-status-pending text-white";
+        return "bg-yellow-500 dark:bg-yellow-600 text-gray-900 dark:text-white";
       case "High":
-        return "bg-status-failed text-white";
+        return "bg-destructive text-destructive-foreground";
       default:
-        return "bg-muted text-foreground";
+        return "bg-muted text-muted-foreground";
     }
   };
 
   const getTypeColor = (type: string) => {
     return type === "Premium"
-      ? "bg-primary/15 text-primary"
+      ? "bg-primary text-primary-foreground"
       : "bg-muted text-muted-foreground";
   };
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
       case "Rising":
-        return <TrendingUp className="size-5 text-ui-teal" />;
+        return <TrendingUp className="size-5 text-primary" />;
       case "Falling":
-        return <TrendingUp className="size-5 text-status-failed rotate-180" />;
+        return <TrendingUp className="size-5 text-destructive rotate-180" />;
       default:
         return <div className="size-5 bg-muted rounded-full" />;
     }
@@ -116,9 +135,9 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
   // Safety check
   if (!results.publishers || !Array.isArray(results.publishers)) {
     return (
-      <div className="w-full p-8 text-foreground">
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
-          <p className="text-yellow-800 dark:text-yellow-300 text-sm font-medium">
+      <div className="w-full p-6 bg-background text-foreground">
+        <div className="bg-card border border-border rounded-lg p-4">
+          <p className="text-muted-foreground text-sm font-medium">
             ⚠️ No publisher data available
           </p>
         </div>
@@ -128,13 +147,13 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
 
   return (
     <div 
-      className="w-full space-y-8 p-8 text-foreground"
+      className="w-full space-y-6 p-6 bg-background text-foreground"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Error message */}
       {results.error && (
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-xl p-4">
-          <p className="text-yellow-800 dark:text-yellow-300 text-sm font-medium">
+        <div className="bg-card border border-border rounded-lg p-4">
+          <p className="text-destructive text-sm font-medium">
             ⚠️ {results.error}
           </p>
         </div>
@@ -142,24 +161,24 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
 
       {/* Filters applied */}
       {results.filters && Object.values(results.filters).some(Boolean) && (
-        <div className="flex flex-wrap gap-4">
+        <div className="flex flex-wrap gap-2">
           {results.filters.niche && (
-            <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-4 py-2 rounded-full text-xs font-semibold">
+            <span className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-semibold">
               Niche: {results.filters.niche}
             </span>
           )}
           {results.filters.country && (
-            <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-300 px-4 py-2 rounded-full text-xs font-semibold">
+            <span className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-semibold">
               Country: {results.filters.country}
             </span>
           )}
           {results.filters.type && (
-            <span className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-300 px-4 py-2 rounded-full text-xs font-semibold">
+            <span className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-semibold">
               Type: {results.filters.type}
             </span>
           )}
           {(results.filters.minDR || results.filters.maxDR) && (
-            <span className="bg-orange-100 dark:bg-orange-900 text-orange-800 dark:text-orange-300 px-4 py-2 rounded-full text-xs font-semibold">
+            <span className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-semibold">
               DR: {results.filters.minDR || 0}-{results.filters.maxDR || 100}
             </span>
           )}
@@ -168,73 +187,80 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
 
       {/* Publishers Table */}
       <div 
-        className="bg-card rounded-xl shadow-lg border border-border overflow-hidden"
+        className="rounded-lg overflow-hidden bg-card border border-border"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-muted/50">
+            <thead className="bg-muted">
               <tr>
-                <th className="px-8 py-6 text-left text-xs font-bold text-foreground uppercase tracking-wide">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-foreground">
                   WEBSITE
                 </th>
-                <th className="px-8 py-6 text-left text-xs font-bold text-foreground uppercase tracking-wide">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-foreground">
                   NICHE
                 </th>
-                <th className="px-8 py-6 text-left text-xs font-bold text-foreground uppercase tracking-wide">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-foreground">
                   COUNTRY/LANG
                 </th>
-                <th className="px-8 py-6 text-left text-xs font-bold text-foreground uppercase tracking-wide">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-foreground">
                   AUTHORITY
                 </th>
-                <th className="px-8 py-6 text-left text-xs font-bold text-foreground uppercase tracking-wide">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-foreground">
                   SPAM
                 </th>
-                <th className="px-8 py-6 text-left text-xs font-bold text-foreground uppercase tracking-wide">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-foreground">
                   PRICE
                 </th>
-                <th className="px-8 py-6 text-left text-xs font-bold text-foreground uppercase tracking-wide">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-foreground">
                   TREND
                 </th>
-                <th className="px-8 py-6 text-left text-xs font-bold text-foreground uppercase tracking-wide">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-foreground">
                   CART
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-card divide-y divide-border">
+            <tbody className="divide-y divide-border">
               {results.publishers.map((publisher) => (
-                <tr key={publisher.id} className="hover:bg-muted/30 transition-all duration-200">
+                <tr 
+                  key={publisher.id} 
+                  className="transition-all duration-150 bg-card hover:bg-muted/50"
+                >
                   {/* Website Column */}
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="flex items-center space-x-4">
-                      <div className="flex items-center space-x-1">
+                  <td className="px-6 py-5">
+                    <div className="flex items-start space-x-3">
+                      <div className="flex items-center space-x-1 flex-shrink-0">
                         {[...Array(5)].map((_, i) => (
                           <Star
                             key={i}
-                            className={`size-5 ${
+                            className={`size-4 ${
                               i < publisher.rating
                                 ? "text-yellow-400 fill-current"
-                                : "text-muted-foreground/40"
+                                : "text-muted-foreground"
                             }`}
                           />
                         ))}
                       </div>
-                      <div className="flex flex-col space-y-2">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-sm font-semibold text-foreground truncate max-w-[250px]">
+                      <div className="flex flex-col space-y-2 min-w-0 flex-1">
+                        <div className="flex items-center space-x-2">
+                          <span className="text-sm font-semibold truncate text-foreground">
                             {publisher.websiteName}
                           </span>
-                          <ExternalLink className="size-4 text-muted-foreground" />
+                          <ExternalLink className="size-3.5 flex-shrink-0 text-primary" />
                         </div>
-                        <div className="flex space-x-3">
+                        <div className="flex flex-wrap gap-2">
                           {publisher.doFollow && (
-                            <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-ui-teal/20 text-ui-teal">
-                              <ExternalLink className="size-4 mr-1.5" />
+                            <span 
+                              className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-primary text-primary-foreground"
+                            >
+                              <ExternalLink className="size-3 mr-1.5" />
                               Do-follow
                             </span>
                           )}
-                          <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-medium bg-muted text-muted-foreground">
-                            <ExternalLink className="size-4 mr-1.5" />
+                          <span 
+                            className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-muted text-muted-foreground"
+                          >
+                            <ExternalLink className="size-3 mr-1.5" />
                             Outbound {publisher.outboundLinks}
                           </span>
                         </div>
@@ -243,59 +269,67 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
                   </td>
 
                   {/* Niche Column */}
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="space-y-3">
+                  <td className="px-6 py-5">
+                    <div className="space-y-2">
                       <div className="flex flex-wrap gap-2">
                         {publisher.niche.map((n, index) => (
                           <span
                             key={index}
-                            className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-primary text-primary-foreground"
                           >
                             {n}
                           </span>
                         ))}
                       </div>
-                      <div className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold ${getTypeColor(publisher.type)}`}>
+                      <div 
+                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${getTypeColor(publisher.type)}`}
+                      >
                         Type: {publisher.type}
                       </div>
                     </div>
                   </td>
 
                   {/* Country/Lang Column */}
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="space-y-2">
-                      <div className="flex items-center space-x-3">
+                  <td className="px-6 py-5">
+                    <div className="space-y-1.5">
+                      <div>
                         <span className="text-sm font-semibold text-foreground">
                           {publisher.language}
                         </span>
                       </div>
-                      <div className="text-xs text-muted-foreground font-medium">
+                      <div className="text-xs font-medium text-muted-foreground">
                         Country: {publisher.country}
                       </div>
-                      <div className="text-xs text-muted-foreground font-medium">
+                      <div className="text-xs font-medium text-muted-foreground">
                         Language: {publisher.language}
                       </div>
                     </div>
                   </td>
 
                   {/* Authority Column */}
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="space-y-3">
-                      <div className="flex items-center space-x-3">
+                  <td className="px-6 py-5">
+                    <div className="space-y-2">
+                      <div className="flex items-center space-x-2">
                         <span className="text-xs font-semibold text-muted-foreground">DR</span>
-                        <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-authority-dr text-white">
+                        <span 
+                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-primary text-primary-foreground"
+                        >
                           {publisher.authority.dr}
                         </span>
                       </div>
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2">
                         <span className="text-xs font-semibold text-muted-foreground">DA</span>
-                        <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-authority-da text-white">
+                        <span 
+                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-primary text-primary-foreground"
+                        >
                           {publisher.authority.da}
                         </span>
                       </div>
-                      <div className="flex items-center space-x-3">
+                      <div className="flex items-center space-x-2">
                         <span className="text-xs font-semibold text-muted-foreground">AS</span>
-                        <span className="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold bg-authority-as text-white">
+                        <span 
+                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-primary text-primary-foreground"
+                        >
                           {publisher.authority.as}
                         </span>
                       </div>
@@ -303,30 +337,32 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
                   </td>
 
                   {/* Spam Column */}
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <span className={`inline-flex items-center px-4 py-2 rounded-full text-xs font-bold ${getSpamColor(publisher.spam.level)}`}>
+                  <td className="px-6 py-5">
+                    <span 
+                      className={`inline-flex items-center px-3 py-1.5 rounded-full text-xs font-bold ${getSpamColor(publisher.spam.level)}`}
+                    >
                       {publisher.spam.percentage}% {publisher.spam.level}
                     </span>
                   </td>
 
                   {/* Price Column */}
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="space-y-2">
+                  <td className="px-6 py-5">
+                    <div className="space-y-1.5">
                       <div className="text-sm font-bold text-foreground">
                         ${publisher.pricing.base}
                       </div>
-                      <div className="text-xs text-muted-foreground font-medium">
+                      <div className="text-xs font-medium text-muted-foreground">
                         Base: ${publisher.pricing.base}
                       </div>
-                      <div className="text-xs text-muted-foreground font-medium">
+                      <div className="text-xs font-medium text-muted-foreground">
                         With Content: ${publisher.pricing.withContent}
                       </div>
                     </div>
                   </td>
 
                   {/* Trend Column */}
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="flex items-center space-x-3">
+                  <td className="px-6 py-5">
+                    <div className="flex items-center space-x-2">
                       {getTrendIcon(publisher.trend)}
                       <span className="text-sm font-semibold text-foreground">
                         {publisher.trend}
@@ -335,41 +371,39 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
                   </td>
 
                   {/* Cart Column */}
-                  <td className="px-8 py-6 whitespace-nowrap">
-                    <div className="flex items-center space-x-3">
-                      <Button
-                        size="default"
-                        variant={cartItems?.has(publisher.id) ? "default" : "outline"}
+                  <td className="px-6 py-5">
+                    <div className="flex items-center space-x-2">
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleCart(publisher);
                         }}
-                        className={`text-xs font-semibold px-4 py-2 ${
-                          cartItems?.has(publisher.id) 
-                            ? "bg-green-600 hover:bg-green-700 text-white border-green-600 hover:border-green-700" 
-                            : "bg-purple-600 hover:bg-purple-700 text-white border-purple-600 hover:border-purple-700"
+                        className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-150 ${
+                          optimisticCartItems.has(publisher.id)
+                            ? "bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-800 text-white"
+                            : "bg-primary hover:bg-primary/90 text-primary-foreground"
                         }`}
                       >
-                        <ShoppingCart className="size-4 mr-2" />
-                        {cartItems?.has(publisher.id) ? "In Cart" : "Add to Cart"}
-                      </Button>
-                      <Button
-                        size="default"
-                        variant="ghost"
+                        <ShoppingCart className="size-3.5 mr-1.5" />
+                        {optimisticCartItems.has(publisher.id) ? "In Cart" : "Add to Cart"}
+                      </button>
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           toggleWishlist(publisher.id);
                         }}
-                        className="p-2"
+                        className={`p-1.5 rounded-md transition-all duration-150 hover:bg-muted ${
+                          wishlist.has(publisher.id) 
+                            ? "text-destructive" 
+                            : "text-muted-foreground"
+                        }`}
                       >
                         <Heart
-                          className={`size-5 ${
-                            wishlist.has(publisher.id)
-                              ? "text-status-failed fill-current"
-                              : "text-muted-foreground"
+                          className={`size-4 ${
+                            wishlist.has(publisher.id) ? "fill-current" : ""
                           }`}
                         />
-                      </Button>
+                      </button>
                     </div>
                   </td>
                 </tr>
@@ -380,19 +414,21 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
       </div>
 
       {/* Summary Stats */}
-      <div className="bg-muted/50 rounded-xl p-6 border border-border">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-8">
-            <span className="text-muted-foreground text-sm">
-              <span className="font-bold text-foreground text-sm">{results.metadata.totalCount}</span> publishers
+      <div 
+        className="rounded-lg p-4 bg-card border border-border"
+      >
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div className="flex items-center space-x-6 flex-wrap">
+            <span className="text-sm text-muted-foreground">
+              <span className="font-bold text-foreground">{results.metadata.totalCount}</span> publishers
             </span>
-            <span className="text-muted-foreground text-sm">
+            <span className="text-sm text-muted-foreground">
               Avg DR: <span className="font-bold text-foreground">{results.metadata.averageDR}</span>
             </span>
-            <span className="text-muted-foreground text-sm">
+            <span className="text-sm text-muted-foreground">
               Avg DA: <span className="font-bold text-foreground">{results.metadata.averageDA}</span>
             </span>
-            <span className="text-muted-foreground text-sm">
+            <span className="text-sm text-muted-foreground">
               Price: <span className="font-bold text-foreground">${results.metadata.priceRange.min}-${results.metadata.priceRange.max}</span>
             </span>
           </div>

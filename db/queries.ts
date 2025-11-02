@@ -1,13 +1,13 @@
 import "server-only";
 
+import { genSaltSync, hashSync } from "bcrypt-ts";
 import { desc, eq, and } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
-import { genSaltSync, hashSync } from "bcrypt-ts";
 
 import { chat, executionPlan, planStep } from "./schema";
-import { external_db } from "@/lib/external-db";
-import { users } from "@/lib/drizzle-external/schema";
+import { users } from "../lib/drizzle-external/schema";
+import { external_db } from "../lib/external-db";
 
 // Native database connection
 let client = postgres(`${process.env.POSTGRES_URL!}?sslmode=require`);
@@ -57,31 +57,70 @@ export async function saveChat({
   id,
   messages,
   userId,
+  title,
+  summary,
 }: {
   id: string;
   messages: any;
   userId: string;
+  title?: string;
+  summary?: string;
 }) {
   try {
     const selectedChats = await db.select().from(chat).where(eq(chat.id, id));
 
+    const updateData: any = {
+      messages: JSON.stringify(messages),
+      updatedAt: new Date(),
+    };
+    
+    if (title !== undefined) {
+      updateData.title = title;
+    }
+    
+    if (summary !== undefined) {
+      updateData.summary = summary;
+    }
+
     if (selectedChats.length > 0) {
       return await db
         .update(chat)
-        .set({
-          messages: JSON.stringify(messages),
-        })
+        .set(updateData)
         .where(eq(chat.id, id));
     }
 
     return await db.insert(chat).values({
       id,
       createdAt: new Date(),
+      updatedAt: new Date(),
       messages: JSON.stringify(messages),
       userId,
+      title: title || null,
+      summary: summary || null,
     });
   } catch (error) {
     console.error("Failed to save chat in database");
+    throw error;
+  }
+}
+
+export async function updateChatSummary({
+  id,
+  summary,
+}: {
+  id: string;
+  summary: string;
+}) {
+  try {
+    return await db
+      .update(chat)
+      .set({
+        summary,
+        updatedAt: new Date(),
+      })
+      .where(eq(chat.id, id));
+  } catch (error) {
+    console.error("Failed to update chat summary");
     throw error;
   }
 }

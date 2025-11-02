@@ -1,4 +1,5 @@
 import { relations } from "drizzle-orm/relations";
+
 import { users, sessions, authenticators, orders, transactions, savedViews, projects, roles, rolePermissions, permissions, userRoles, onboardingProfiles, notificationTypes, notifications, userNotificationReads, searchInterests, orderItems, caseStudies, keywordData, serpFeatures, monthlyData, userActivities, feedback, wishlists, wishlistItems, userTags, tags, orderTags, orderFilters, bonusRules, bonusGrants, accounts, projectCompetitors, userInteractions, products, productFeatures, productTags, reviews, reviewTags, reviewProducts, userContext, contextUpdates, userProfiles, userAiInsights, aiInsightUpdates, userContextProfiles, userInteractionEmbeddings, projectFilterPreferences, userPersonality, userTopicClusters, crossChatReferences, chatSessions, semanticCache, ragPerformanceMetrics, userKnowledgeBase, userDocuments, documentChunkMetadata } from "./schema";
 
 export const sessionsRelations = relations(sessions, ({one}) => ({

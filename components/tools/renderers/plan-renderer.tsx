@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { ToolRendererProps } from "../types";
+
 import { PlanDisplay } from "../../custom/plan-display";
+import { ToolRendererProps } from "../types";
 
 interface PlanResult {
   planId?: string;

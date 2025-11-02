@@ -1,9 +1,10 @@
 "use client";
 
 import React from "react";
-import { ToolRendererProps } from "../types";
-import { PriceRangeEmbed } from "../../ui/price-range-embed";
+
 import { DRRangeEmbed } from "../../ui/dr-range-embed";
+import { PriceRangeEmbed } from "../../ui/price-range-embed";
+import { ToolRendererProps } from "../types";
 
 interface FiltersResult {
   action?: "show_price_modal" | "show_dr_modal" | "collect_complete";
@@ -49,6 +50,9 @@ export function FiltersRenderer({
     const { action, message, collectedFilters } = data;
 
     if (action === "show_price_modal") {
+      if (!onPriceRangeConfirm || !onPriceRangeSkip) {
+        return null;
+      }
       return (
         <div key={toolCallId} className="max-w-md">
           <PriceRangeEmbed
@@ -60,6 +64,9 @@ export function FiltersRenderer({
     }
 
     if (action === "show_dr_modal") {
+      if (!onDRRangeConfirm || !onDRRangeSkip) {
+        return null;
+      }
       return (
         <div key={toolCallId} className="max-w-md">
           <DRRangeEmbed

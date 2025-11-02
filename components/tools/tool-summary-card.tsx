@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+
 import { ToolSummaryProps } from "./types";
 
 /**
@@ -26,7 +27,7 @@ export function ToolSummaryCard({
   return (
     <div
       onClick={clickable && !loading ? onClick : undefined}
-      className={`relative bg-card rounded-lg p-4 transition-all duration-200 hover:shadow-md w-fit max-w-full ${
+      className={`relative bg-card rounded-lg p-4 transition-all duration-200 hover:shadow-md w-full ${
         clickable && !loading ? 'hover:bg-card/80 cursor-pointer' : ''
       } ${loading ? 'border-2 border-border' : 'border border-border'}`}
     >

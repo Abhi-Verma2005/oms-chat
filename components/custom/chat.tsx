@@ -1,19 +1,49 @@
 "use client";
 
-import { Attachment, Message } from "ai";
-import { GripVertical } from "lucide-react";
-import { useState, useRef, useEffect, useCallback } from "react";
+import { Attachment, Message, ToolInvocation } from "ai";
+import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
 import { LeftSidebar } from "./left-sidebar";
 import { Message as PreviewMessage } from "./message";
 import { MultimodalInput } from "./multimodal-input";
-import { Overview } from "./overview";
 import { RightPanel } from "./RightPanel";
 import { useScrollToBottom } from "./use-scroll-to-bottom";
 import { useCart } from "../../contexts/cart-context";
 import { useSplitScreen } from "../../contexts/SplitScreenProvider";
 import { useUserInfo } from "../../contexts/UserInfoProvider";
 import { useWebSocket, MessageType, ChatMessage } from "../../contexts/websocket-context";
+
+// Time-based greeting generator
+const getTimeBasedGreeting = () => {
+  const hour = new Date().getHours();
+  
+  if (hour >= 5 && hour < 12) {
+    return {
+      emoji: "☕",
+      greeting: "Good morning!",
+      subtitle: "Coffee and OMS time?",
+    };
+  } else if (hour >= 12 && hour < 17) {
+    return {
+      emoji: "🌤️",
+      greeting: "Good afternoon!",
+      subtitle: "Ready to discover?",
+    };
+  } else if (hour >= 17 && hour < 21) {
+    return {
+      emoji: "🌆",
+      greeting: "Good evening!",
+      subtitle: "Let's get things done",
+    };
+  } else {
+    return {
+      emoji: "🌙",
+      greeting: "Good night!",
+      subtitle: "Working late? OMS is here",
+    };
+  }
+};
 
 export function Chat({
   id,
@@ -28,8 +58,78 @@ export function Chat({
   const { state: cartState } = useCart();
   const { sendMessage, joinChat, leaveChat, onEvent, state: wsState } = useWebSocket();
   
+  // Clean up initialMessages: merge empty assistant messages with tool invocations into adjacent messages
+  const cleanedInitialMessages = useMemo(() => {
+    if (!initialMessages || initialMessages.length === 0) return [];
+    
+    const cleaned: Array<Message> = [];
+    const pendingToolInvocations: Array<ToolInvocation>[] = []; // Track tool invocations from skipped messages
+    
+    for (let i = 0; i < initialMessages.length; i++) {
+      const currentMsg = initialMessages[i];
+      
+      // If it's an assistant message with empty content but has tool invocations
+      if (
+        currentMsg.role === "assistant" &&
+        (!currentMsg.content || currentMsg.content.trim() === "") &&
+        currentMsg.toolInvocations &&
+        currentMsg.toolInvocations.length > 0
+      ) {
+        // Look ahead to see if there's a next assistant message with content
+        let hasNextAssistantWithContent = false;
+        
+        for (let j = i + 1; j < initialMessages.length; j++) {
+          if (
+            initialMessages[j].role === "assistant" &&
+            initialMessages[j].content &&
+            initialMessages[j].content.trim() !== ""
+          ) {
+            hasNextAssistantWithContent = true;
+            // Store tool invocations to merge into the next assistant message
+            pendingToolInvocations.push(currentMsg.toolInvocations || []);
+            break;
+          }
+          // Stop if we hit a user message
+          if (initialMessages[j].role === "user") {
+            break;
+          }
+        }
+        
+        // If there's a next assistant with content, skip this empty message
+        // The tool invocations will be merged when we process that message
+        if (hasNextAssistantWithContent) {
+          continue; // Skip this empty message
+        } else {
+          // No next assistant with content, keep it (might need to show tool invocations)
+          cleaned.push(currentMsg);
+        }
+      } else if (
+        currentMsg.role === "assistant" &&
+        currentMsg.content &&
+        currentMsg.content.trim() !== "" &&
+        pendingToolInvocations.length > 0
+      ) {
+        // This is an assistant message with content, merge any pending tool invocations
+        const mergedToolInvocations = [
+          ...pendingToolInvocations.flat(),
+          ...(currentMsg.toolInvocations || []),
+        ];
+        cleaned.push({
+          ...currentMsg,
+          toolInvocations: mergedToolInvocations,
+        });
+        pendingToolInvocations.length = 0; // Clear pending
+      } else {
+        // Not an empty assistant message, add it as-is
+        cleaned.push(currentMsg);
+      }
+    }
+    
+    return cleaned;
+  }, [initialMessages]);
+
   // Convert initialMessages to internal format and manage state
-  const [messages, setMessages] = useState<Array<Message>>(initialMessages || []);
+  const [messages, setMessages] = useState<Array<Message>>(cleanedInitialMessages);
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [streamingContent, setStreamingContent] = useState<{ [messageId: string]: string }>({});
@@ -42,49 +142,8 @@ export function Chat({
     useScrollToBottom<HTMLDivElement>(!isLoading);
 
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
-  const { isRightPanelOpen, rightPanelWidth, setRightPanelWidth } = useSplitScreen();
-  const [isResizing, setIsResizing] = useState(false);
+  const { isRightPanelOpen } = useSplitScreen();
   const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(true);
-  const containerRef = useRef<HTMLDivElement>(null);
-
-  // Handle mouse move for resizing
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isResizing || !containerRef.current) return;
-
-      const containerRect = containerRef.current.getBoundingClientRect();
-      const newRightPanelWidth = containerRect.right - e.clientX;
-      
-      // Constrain width between 300px and 60% of screen width
-      const maxWidth = window.innerWidth * 0.6;
-      const constrainedWidth = Math.max(300, Math.min(newRightPanelWidth, maxWidth));
-      setRightPanelWidth(constrainedWidth);
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-    };
-
-    if (isResizing) {
-      document.addEventListener('mousemove', handleMouseMove);
-      document.addEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = 'col-resize';
-      document.body.style.userSelect = 'none';
-    }
-
-    return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
-      document.body.style.cursor = '';
-      document.body.style.userSelect = '';
-    };
-  }, [isResizing, setRightPanelWidth]);
-
-  // Handle mouse down on resize handle
-  const handleMouseDown = (e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsResizing(true);
-  };
 
   // Join chat on mount
   useEffect(() => {
@@ -133,19 +192,20 @@ export function Chat({
             (m) => m.id === messageId && m.role === "assistant"
           );
           
+          let updatedMessages: Array<Message>;
+          
           if (existingIndex >= 0) {
             // Update existing message
-            const updated = [...prev];
-            updated[existingIndex] = {
-              ...updated[existingIndex],
+            updatedMessages = [...prev];
+            updatedMessages[existingIndex] = {
+              ...updatedMessages[existingIndex],
               content,
             };
             console.log("[Chat] Updated existing message at index:", existingIndex);
-            return updated;
           } else {
             // Add new assistant message
             console.log("[Chat] Creating new assistant message with id:", messageId);
-            return [
+            updatedMessages = [
               ...prev,
               {
                 id: messageId,
@@ -154,6 +214,29 @@ export function Chat({
               },
             ];
           }
+          
+          // Save to database immediately
+          if (user) {
+            const assistantMessage = updatedMessages[existingIndex >= 0 ? existingIndex : updatedMessages.length - 1];
+            fetch("/api/chat/message", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chatId: id,
+                message: assistantMessage,
+              }),
+            })
+              .then((res) => {
+                if (!res.ok) {
+                  console.error("[Chat] Failed to save assistant message:", res.status, res.statusText);
+                }
+              })
+              .catch((err) => {
+                console.error("[Chat] Failed to save assistant message:", err);
+              });
+          }
+          
+          return updatedMessages;
         });
         
         // Clear streaming content
@@ -203,6 +286,7 @@ export function Chat({
         requestId?: string;
         role?: string;
       };
+      
       console.log("[Chat] Function call:", data.name, data.args);
       
       // Add function call as a tool invocation in the last assistant message
@@ -246,13 +330,38 @@ export function Chat({
                 args: data.args,
                 state: "call",
               });
+              
+              // Save the message with tool invocation to DB
+              const updatedMessage = { ...message, toolInvocations: [...message.toolInvocations] };
+              updated[lastAssistantIndex] = updatedMessage;
+              
+              if (user && updatedMessage.role === "assistant") {
+                fetch("/api/chat/message", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chatId: id,
+                    message: updatedMessage,
+                  }),
+                })
+                  .then((res) => {
+                    if (!res.ok) {
+                      console.error("[Chat] Failed to save function call:", res.status, res.statusText);
+                    } else {
+                      console.log("[Chat] Successfully saved message with function call to DB");
+                    }
+                  })
+                  .catch((err) => {
+                    console.error("[Chat] Failed to save function call:", err);
+                  });
+              }
             } else {
               console.log("[Chat] Tool invocation already exists in call state, skipping duplicate");
             }
           } else {
             console.log("[Chat] Last assistant message is older than last user message, creating new assistant message");
             // Create a new assistant message instead
-            updated.push({
+            const newMessage: Message = {
               id: `assistant_${Date.now()}`,
               role: "assistant",
               content: "",
@@ -262,12 +371,35 @@ export function Chat({
                 args: data.args,
                 state: "call",
               }],
-            });
+            };
+            updated.push(newMessage);
+            
+            // Save the new message with tool invocation to DB
+            if (user && newMessage.role === "assistant") {
+              fetch("/api/chat/message", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  chatId: id,
+                  message: newMessage,
+                }),
+              })
+                .then((res) => {
+                  if (!res.ok) {
+                    console.error("[Chat] Failed to save new function call:", res.status, res.statusText);
+                  } else {
+                    console.log("[Chat] Successfully saved new message with function call to DB");
+                  }
+                })
+                .catch((err) => {
+                  console.error("[Chat] Failed to save new function call:", err);
+                });
+            }
           }
         } else {
           // Create a new assistant message with tool invocation
           console.log("[Chat] Creating new assistant message for function call");
-          updated.push({
+          const newMessage: Message = {
             id: `assistant_${Date.now()}`,
             role: "assistant",
             content: "",
@@ -277,7 +409,30 @@ export function Chat({
               args: data.args,
               state: "call",
             }],
-          });
+          };
+          updated.push(newMessage);
+          
+          // Save the new message with tool invocation to DB
+          if (user && newMessage.role === "assistant") {
+            fetch("/api/chat/message", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                chatId: id,
+                message: newMessage,
+              }),
+            })
+              .then((res) => {
+                if (!res.ok) {
+                  console.error("[Chat] Failed to save new function call:", res.status, res.statusText);
+                } else {
+                  console.log("[Chat] Successfully saved new message with function call to DB");
+                }
+              })
+              .catch((err) => {
+                console.error("[Chat] Failed to save new function call:", err);
+              });
+          }
         }
         return updated;
       });
@@ -323,10 +478,33 @@ export function Chat({
                   result: data.result,
                 };
               });
-              updated[i] = {
+              const updatedMessage = {
                 ...updated[i],
                 toolInvocations: newToolInvocations,
               };
+              updated[i] = updatedMessage;
+
+              // Save the updated message with function result to DB
+              if (user && updatedMessage.role === "assistant") {
+                fetch("/api/chat/message", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chatId: id,
+                    message: updatedMessage,
+                  }),
+                })
+                  .then((res) => {
+                    if (!res.ok) {
+                      console.error("[Chat] Failed to save function result:", res.status, res.statusText);
+                    } else {
+                      console.log("[Chat] Successfully saved message with function result to DB");
+                    }
+                  })
+                  .catch((err) => {
+                    console.error("[Chat] Failed to save function result:", err);
+                  });
+              }
             }
           }
         }
@@ -430,10 +608,33 @@ export function Chat({
                   result: transformedData,
                 };
               });
-              updated[i] = {
+              const updatedMessage = {
                 ...updated[i],
                 toolInvocations: newToolInvocations,
               };
+              updated[i] = updatedMessage;
+
+              // Save the updated message with publishers data to DB
+              if (user && updatedMessage.role === "assistant") {
+                fetch("/api/chat/message", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    chatId: id,
+                    message: updatedMessage,
+                  }),
+                })
+                  .then((res) => {
+                    if (!res.ok) {
+                      console.error("[Chat] Failed to save publishers data:", res.status, res.statusText);
+                    } else {
+                      console.log("[Chat] Successfully saved message with publishers data to DB");
+                    }
+                  })
+                  .catch((err) => {
+                    console.error("[Chat] Failed to save publishers data:", err);
+                  });
+              }
             }
           }
         }
@@ -459,7 +660,7 @@ export function Chat({
       unsubscribePublishersData();
       unsubscribeError();
     };
-  }, [onEvent, streamingContent]);
+  }, [onEvent, streamingContent, id, user]);
 
   // Update messages when streaming content changes
   useEffect(() => {
@@ -510,14 +711,34 @@ export function Chat({
     // Add user message to state
     const userMsgId = `user_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`;
     lastUserMessageRef.current = userMsgId;
-    setMessages((prev) => [
-      ...prev,
-      {
-        id: userMsgId,
-        role: "user",
-        content: userMessage.content,
-      },
-    ]);
+    const userMsg: Message = {
+      id: userMsgId,
+      role: "user",
+      content: userMessage.content,
+    };
+    
+    // Add to state immediately
+    setMessages((prev) => [...prev, userMsg]);
+    
+    // Save to database immediately (don't await - but ensure it runs)
+    if (user) {
+      fetch("/api/chat/message", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chatId: id,
+          message: userMsg,
+        }),
+      })
+        .then((res) => {
+          if (!res.ok) {
+            console.error("[Chat] Failed to save user message:", res.status, res.statusText);
+          }
+        })
+        .catch((err) => {
+          console.error("[Chat] Failed to save user message:", err);
+        });
+    }
 
     // Scroll to top immediately after adding user message
     setTimeout(() => {
@@ -538,7 +759,7 @@ export function Chat({
     setInput("");
     setIsLoading(true);
     stopRequestedRef.current = false;
-  }, [input, isLoading, wsState, id, sendMessage, messagesContainerRef]);
+  }, [input, isLoading, wsState, id, sendMessage, messagesContainerRef, user]);
 
   // Stop generation
   const stop = useCallback(() => {
@@ -590,12 +811,9 @@ export function Chat({
   }, []);
 
   return (
-    <div 
-      ref={containerRef}
-      className="flex flex-row h-dvh bg-background relative"
-    >
-      {/* Left Sidebar - Always overlay */}
-      <div className="absolute left-0 top-0 z-20">
+    <div className="flex flex-row h-dvh bg-background relative">
+      {/* Left Sidebar - Fixed width */}
+      <div className="w-16 h-full shrink-0 z-20">
         <LeftSidebar 
           user={user} 
           onCollapseChange={setIsLeftSidebarCollapsed}
@@ -612,76 +830,80 @@ export function Chat({
         />
       )}
 
-      <div 
-        className={`flex flex-col justify-center pb-4 md:pb-8 transition-all duration-300 w-full ${
-          isRightPanelOpen ? 'mr-0' : ''
-        }`}
-        style={{
-          minWidth: isRightPanelOpen ? '300px' : '100%',
-          maxWidth: isRightPanelOpen ? `calc(100% - ${rightPanelWidth}px)` : '100%'
-        }}
-      >
-        <div 
-          className="flex flex-col justify-between items-center gap-4 h-full"
-        >
-          <div
-            ref={messagesContainerRef}
-            className="flex flex-col gap-4 size-full items-center overflow-y-auto px-4 md:px-0"
+      {/* Panel Group for resizable layout */}
+      <div className="flex-1 h-full min-w-0">
+        <PanelGroup direction="horizontal" className="size-full">
+          {/* Main Chat Area */}
+          <Panel 
+            defaultSize={100}
+            minSize={25}
+            className="flex flex-col relative"
           >
-            {messages.length === 0 && <Overview />}
+            <div 
+              className={`flex flex-col pb-4 md:pb-8 transition-all duration-300 h-full ${
+                messages.length === 0 ? 'justify-center items-center' : 'justify-between'
+              }`}
+            >
+              {messages.length > 0 && (
+                <div
+                  ref={messagesContainerRef}
+                  className="flex flex-col gap-4 w-full h-full items-center overflow-y-auto px-4"
+                >
+                  {messages.map((message, index) => (
+                    <PreviewMessage
+                      key={message.id}
+                      chatId={id}
+                      role={message.role}
+                      content={message.content}
+                      attachments={message.experimental_attachments}
+                      toolInvocations={message.toolInvocations}
+                      onRegenerate={handleRegenerate}
+                      isLastMessage={index === messages.length - 1}
+                      isGenerating={isLoading && index === messages.length - 1}
+                      onAppendMessage={append}
+                      loadingTools={loadingTools}
+                    />
+                  ))}
 
-            {messages.map((message, index) => (
-              <PreviewMessage
-                key={message.id}
-                chatId={id}
-                role={message.role}
-                content={message.content}
-                attachments={message.experimental_attachments}
-                toolInvocations={message.toolInvocations}
-                onRegenerate={handleRegenerate}
-                isLastMessage={index === messages.length - 1}
-                isGenerating={isLoading && index === messages.length - 1}
-                onAppendMessage={append}
-                loadingTools={loadingTools}
-              />
-            ))}
+                  <div
+                    ref={messagesEndRef}
+                    className="shrink-0 min-w-[24px] min-h-[24px]"
+                  />
+                </div>
+              )}
 
-            <div
-              ref={messagesEndRef}
-              className="shrink-0 min-w-[24px] min-h-[24px]"
-            />
-          </div>
+              <form className="flex flex-row gap-2 relative items-end w-full md:max-w-[650px] max-w-[calc(100dvw-32px)] px-4 mx-auto">
+                <MultimodalInput
+                  input={input}
+                  setInput={setInput}
+                  handleSubmit={handleSubmit}
+                  isLoading={isLoading}
+                  stop={stop}
+                  attachments={attachments}
+                  setAttachments={setAttachments}
+                  messages={messages}
+                  append={append}
+                />
+              </form>
+            </div>
+          </Panel>
 
-          <form className="flex flex-row gap-2 relative items-end w-full md:max-w-[650px] max-w-[calc(100dvw-32px)] px-4 md:px-0">
-            <MultimodalInput
-              input={input}
-              setInput={setInput}
-              handleSubmit={handleSubmit}
-              isLoading={isLoading}
-              stop={stop}
-              attachments={attachments}
-              setAttachments={setAttachments}
-              messages={messages}
-              append={append}
-            />
-          </form>
-        </div>
+        {/* Right Panel */}
+        {isRightPanelOpen && (
+          <>
+            <PanelResizeHandle className="w-1 bg-border hover:bg-blue-500/50 cursor-col-resize transition-colors relative z-10" />
+            <Panel 
+              defaultSize={30} 
+              minSize={15} 
+              maxSize={75}
+              className="flex flex-col"
+            >
+              <RightPanel />
+            </Panel>
+          </>
+        )}
+      </PanelGroup>
       </div>
-
-      {/* Resize Handle - only show when right panel is open */}
-      {isRightPanelOpen && (
-        <div
-          className="w-1 bg-border hover:bg-blue-500/50 cursor-col-resize transition-colors relative z-10"
-          onMouseDown={handleMouseDown}
-        >
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <GripVertical className="size-4 text-muted-foreground" />
-          </div>
-        </div>
-      )}
-
-      {/* Right Panel */}
-      <RightPanel />
     </div>
   );
 }

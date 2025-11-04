@@ -14,6 +14,7 @@ import {
   collectPublisherFilters,
 } from "../../../../ai/actions";
 import { createExecutionPlan, updatePlanProgress } from "../../../../ai/actions/plan-management";
+import { generateChatTitleFromMessages } from "../../../../ai/title";
 import { auth } from "../../../../app/(auth)/auth";
 import {
   deleteChatById,
@@ -103,10 +104,11 @@ export async function POST(request: Request) {
           - Mention any filters applied
           - Tell user to "Click the results card to view all publishers and add them to your cart"
           - DO NOT list individual publishers in your response - the detailed table is shown in the right panel
+          - IMPORTANT: After showing publishers, immediately suggest adding selected publishers to cart by saying "Would you like me to add any of these publishers to your cart? Just let me know which ones you're interested in!"
         - today's date is ${new Date().toLocaleDateString()}.
         - ask follow up questions to help users find the right publishers for their needs.
         - help users understand publisher metrics like DR (Domain Rating), DA (Domain Authority), and spam scores.
-        - here's the optimal flow for publisher discovery:
+        - here's the optimal flow for publisher discovery and checkout:
           - when users ask to browse publishers without filters, use collectPublisherFilters tool to guide them through setting up price and DR/DA ranges
           - collectPublisherFilters tool shows interactive modals in chat - use it to collect user preferences step by step
           - after user sets price range, continue with DR/DA range collection
@@ -115,7 +117,14 @@ export async function POST(request: Request) {
           - search for specific publishers or niches
           - view detailed publisher information
           - help users understand pricing and requirements
-          - add publishers to cart for backlinking campaigns
+          - CART AND CHECKOUT FLOW (CRITICAL):
+            * After browsePublishers is called, proactively suggest adding publishers to cart
+            * When user mentions specific publishers or says things like "add these" or "add to cart", use addToCart tool for each selected publisher
+            * After items are added to cart, ALWAYS call viewCart tool to show the user their current cart
+            * When showing the cart, ask the user: "Would you like to edit anything in your cart, or are you ready to proceed to checkout?"
+            * If user says they're done or ready to checkout, call processPayment tool with the current cart items
+            * If user wants to edit the cart, wait for their changes and then show cart again
+            * Once processPayment is called, the Stripe payment component will be displayed
           - manage cart items (add, remove, update quantities)
           - process payments using Stripe for completed orders
           - acknowledge successful payments and provide next steps for backlinking campaigns
@@ -366,10 +375,25 @@ export async function POST(request: Request) {
     onFinish: async ({ responseMessages }) => {
       if (session.user && session.user.id) {
         try {
+          // Heuristic: generate title early when conversation is short (avoids recomputing later)
+          let title: string | undefined = undefined;
+          try {
+            const totalMessages = coreMessages.length + responseMessages.length;
+            if (totalMessages <= 4) {
+              title = await generateChatTitleFromMessages([
+                ...coreMessages,
+                ...responseMessages,
+              ]);
+            }
+          } catch {
+            // best-effort title generation; ignore errors
+          }
+
           await saveChat({
             id,
             messages: [...coreMessages, ...responseMessages],
             userId: session.user.id,
+            title,
           });
         } catch (error) {
           console.error("Failed to save chat");

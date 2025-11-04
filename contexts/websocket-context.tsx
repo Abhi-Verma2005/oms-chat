@@ -21,6 +21,7 @@ export enum MessageType {
   FunctionExecuteRequest = "function_execute_request",
   FunctionExecuteResponse = "function_execute_response",
   PublishersData = "publishers_data",
+  CartData = "cart_data",
   ExecutionPlanData = "execution_plan_data",
   PlanCreated = "plan_created",
   PlanUpdated = "plan_updated",
@@ -68,6 +69,7 @@ type WebSocketState = "connecting" | "connected" | "disconnected" | "error";
 interface WebSocketContextType {
   state: WebSocketState;
   sendMessage: (data: SendMessageData) => void;
+  sendStop: (chatId: string) => void;
   joinChat: (chatId: string) => void;
   leaveChat: (chatId: string) => void;
   onMessage: (handler: (message: WebSocketMessage) => void) => () => void;
@@ -211,6 +213,17 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     wsRef.current.send(JSON.stringify(message));
   }, []);
 
+  const sendStop = useCallback((chatId: string) => {
+    if (wsRef.current?.readyState !== WebSocket.OPEN) return;
+    const stopMessage: WebSocketMessage = {
+      type: MessageType.StopGeneration,
+      payload: { chat_id: chatId },
+      timestamp: Date.now(),
+      message_id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
+    } as any;
+    wsRef.current.send(JSON.stringify(stopMessage));
+  }, []);
+
   const joinChat = useCallback((chatId: string) => {
     if (wsRef.current?.readyState !== WebSocket.OPEN) {
       // Store chatId to join after connection
@@ -278,6 +291,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const value: WebSocketContextType = {
     state,
     sendMessage,
+    sendStop,
     joinChat,
     leaveChat,
     onMessage,

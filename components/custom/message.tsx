@@ -12,12 +12,41 @@ import { PreviewAttachment } from "./preview-attachment";
 import { Weather } from "./weather";
 import { useCart } from "../../contexts/cart-context";
 import { useSplitScreen } from "../../contexts/SplitScreenProvider";
+import TextShimmer from "../forgeui/text-shimmer";
 import CartManagementResults from "../oms/cart-management-results";
 import { OrdersDisplayResults } from "../oms/orders-display-results";
 import StripePaymentComponent from "../oms/stripe-payment-component";
 import { PublishersResults } from "../publishers/publishers-results";
 import { ToolInvocationItem } from "../tools/use-tool-invocation";
 
+// Helper function to get dynamic loading text based on active tools
+const getLoadingText = (loadingTools?: Set<string>): string => {
+  if (!loadingTools || loadingTools.size === 0) {
+    return "Thinking...";
+  }
+
+  // Get the first active tool name
+  const toolName = Array.from(loadingTools)[0];
+
+  // Map tool names to appropriate loading messages
+  const toolMessages: Record<string, string> = {
+    browsePublishers: "Fetching publishers...",
+    getWeather: "Fetching weather...",
+    displayOrders: "Fetching orders...",
+    getPublisherDetails: "Fetching publisher details...",
+    addToCart: "Adding to cart...",
+    removeFromCart: "Removing from cart...",
+    viewCart: "Loading cart...",
+    clearCart: "Clearing cart...",
+    updateCartItemQuantity: "Updating cart...",
+    collectPublisherFilters: "Collecting filters...",
+    processPayment: "Processing payment...",
+    createExecutionPlan: "Creating plan...",
+    updatePlanProgress: "Updating plan...",
+  };
+
+  return toolMessages[toolName] || "Thinking...";
+};
 
 export const Message = ({
   chatId,
@@ -332,7 +361,7 @@ export const Message = ({
 
   return (
     <motion.div
-      className={`group flex flex-row gap-4 px-4 w-full max-w-[650px] first-of-type:pt-20`}
+      className={`group flex flex-row gap-4 px-4 w-full max-w-[650px]`}
       initial={{ y: 5, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
     >
@@ -344,18 +373,22 @@ export const Message = ({
         ) : (
           <UserIcon />
         )}
-        {role === "assistant" && isGenerating && (
-          <div className="absolute -top-1 -right-1 size-2 bg-primary rounded-full animate-pulse" />
-        )}
+        {/* Removed blue dot indicator over AI icon while generating */}
       </div>
 
       <div className="flex flex-col gap-2 w-full">
-        {content && typeof content === "string" && (
-          <div 
-            className={`text-foreground flex flex-col gap-4 relative ${
-              isGenerating ? 'animate-[stream-glow_2s_ease-in-out_infinite]' : ''
-            }`}
-          >
+        {/* Show dynamic shimmer when generating but no content yet */}
+        {role === "assistant" && isGenerating && (!content || (typeof content === "string" && content.trim() === "")) && (
+          <div className="text-foreground">
+            <TextShimmer className="text-sm" duration={1.5} repeatDelay={0.5}>
+              {getLoadingText(loadingTools)}
+            </TextShimmer>
+          </div>
+        )}
+        
+        {/* Show content when it exists */}
+        {content && typeof content === "string" && content.trim() !== "" && (
+          <div className="text-foreground flex flex-col gap-4 relative">
             <div className={isGenerating ? 'streaming-content' : ''}>
               <Markdown>{content}</Markdown>
             </div>

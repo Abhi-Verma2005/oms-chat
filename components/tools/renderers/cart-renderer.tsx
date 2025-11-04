@@ -41,20 +41,20 @@ export function CartRenderer({
       >
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <div className="h-4 w-16 bg-muted animate-pulse rounded"></div>
-            <span>items in cart</span>
+            <div className="h-4 w-16 bg-[#1E1E1E] animate-pulse rounded"></div>
+            <span className="text-[#A0A0A0]">items in cart</span>
           </div>
           <div className="flex items-center gap-4">
-            <span>
+            <span className="text-[#A0A0A0]">
               Total:{" "}
-              <span className="font-medium text-foreground">
-                <span className="inline-block h-3 w-16 bg-muted animate-pulse rounded"></span>
+              <span className="font-medium text-[#E0E0E0]">
+                <span className="inline-block h-3 w-16 bg-[#1E1E1E] animate-pulse rounded"></span>
               </span>
             </span>
-            <span>
+            <span className="text-[#A0A0A0]">
               Quantity:{" "}
-              <span className="font-medium text-foreground">
-                <span className="inline-block h-3 w-8 bg-muted animate-pulse rounded"></span>
+              <span className="font-medium text-[#E0E0E0]">
+                <span className="inline-block h-3 w-8 bg-[#1E1E1E] animate-pulse rounded"></span>
               </span>
             </span>
           </div>
@@ -83,22 +83,22 @@ export function CartRenderer({
       >
         <div className="space-y-2">
           <div className="flex items-center gap-2">
-            <span className="font-medium text-foreground">
+            <span className="font-medium text-[#E0E0E0]">
               {summary.totalItems ?? 0}
             </span>
-            <span>items in cart</span>
+            <span className="text-[#A0A0A0]">items in cart</span>
           </div>
 
           <div className="flex items-center gap-4">
-            <span>
+            <span className="text-[#A0A0A0]">
               Total:{" "}
-              <span className="font-medium text-foreground">
+              <span className="font-medium text-[#569CD6]">
                 ${(summary.totalPrice ?? 0).toFixed(2)}
               </span>
             </span>
-            <span>
+            <span className="text-[#A0A0A0]">
               Quantity:{" "}
-              <span className="font-medium text-foreground">
+              <span className="font-medium text-[#E0E0E0]">
                 {summary.totalQuantity ?? 0}
               </span>
             </span>
@@ -106,17 +106,17 @@ export function CartRenderer({
 
           {cartData?.items && cartData.items.length > 0 && (
             <div className="flex flex-wrap gap-1">
-              <span className="text-muted-foreground">Items:</span>
+              <span className="text-[#A0A0A0]">Items:</span>
               {cartData.items.slice(0, 2).map((item, index) => (
                 <span
                   key={index}
-                  className="bg-muted px-2 py-0.5 rounded text-xs"
+                  className="bg-[#007ACC] text-white px-2 py-0.5 rounded text-xs"
                 >
                   {item.name} (${item.price})
                 </span>
               ))}
               {cartData.items.length > 2 && (
-                <span className="text-muted-foreground">
+                <span className="text-[#A0A0A0]">
                   +{cartData.items.length - 2} more
                 </span>
               )}

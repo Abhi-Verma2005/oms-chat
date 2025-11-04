@@ -127,6 +127,10 @@ export function convertToUIMessages(
 }
 
 export function getTitleFromChat(chat: Chat) {
+  if (chat.title && chat.title.trim().length > 0) {
+    return chat.title;
+  }
+
   const messages = convertToUIMessages(chat.messages as Array<CoreMessage>);
   const firstMessage = messages[0];
 

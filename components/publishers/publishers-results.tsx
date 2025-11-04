@@ -105,39 +105,39 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
   const getSpamColor = (level: string) => {
     switch (level) {
       case "Low":
-        return "bg-green-600 dark:bg-green-700 text-white";
+        return "bg-[#6A9955] text-white";
       case "Medium":
-        return "bg-yellow-500 dark:bg-yellow-600 text-gray-900 dark:text-white";
+        return "bg-[#F48771] text-white";
       case "High":
-        return "bg-destructive text-destructive-foreground";
+        return "bg-[#CD3131] text-white";
       default:
-        return "bg-muted text-muted-foreground";
+        return "bg-[#1E1E1E] text-[#A0A0A0]";
     }
   };
 
   const getTypeColor = (type: string) => {
     return type === "Premium"
-      ? "bg-primary text-primary-foreground"
-      : "bg-muted text-muted-foreground";
+      ? "bg-[#007ACC] text-white"
+      : "bg-[#1E1E1E] text-[#A0A0A0]";
   };
 
   const getTrendIcon = (trend: string) => {
     switch (trend) {
       case "Rising":
-        return <TrendingUp className="size-5 text-primary" />;
+        return <TrendingUp className="size-5 text-[#569CD6]" />;
       case "Falling":
-        return <TrendingUp className="size-5 text-destructive rotate-180" />;
+        return <TrendingUp className="size-5 text-[#CD3131] rotate-180" />;
       default:
-        return <div className="size-5 bg-muted rounded-full" />;
+        return <div className="size-5 bg-[#1E1E1E] rounded-full" />;
     }
   };
 
   // Safety check
   if (!results.publishers || !Array.isArray(results.publishers)) {
     return (
-      <div className="w-full p-6 bg-background text-foreground">
-        <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-muted-foreground text-sm font-medium">
+      <div className="w-full p-6 bg-[#121212] text-[#E0E0E0]">
+        <div className="bg-[#2D2D2D] border border-[#333333] rounded-lg p-4">
+          <p className="text-[#A0A0A0] text-sm font-medium">
             ⚠️ No publisher data available
           </p>
         </div>
@@ -147,13 +147,13 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
 
   return (
     <div 
-      className="w-full space-y-6 p-6 bg-background text-foreground"
+      className="w-full space-y-6 p-6 bg-[#121212] text-[#E0E0E0]"
       onClick={(e) => e.stopPropagation()}
     >
       {/* Error message */}
       {results.error && (
-        <div className="bg-card border border-border rounded-lg p-4">
-          <p className="text-destructive text-sm font-medium">
+        <div className="bg-[#2D2D2D] border border-[#CD3131] rounded-lg p-4">
+          <p className="text-[#CD3131] text-sm font-medium">
             ⚠️ {results.error}
           </p>
         </div>
@@ -163,22 +163,22 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
       {results.filters && Object.values(results.filters).some(Boolean) && (
         <div className="flex flex-wrap gap-2">
           {results.filters.niche && (
-            <span className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-semibold">
+            <span className="bg-[#007ACC] text-white px-3 py-1.5 rounded-full text-xs font-semibold">
               Niche: {results.filters.niche}
             </span>
           )}
           {results.filters.country && (
-            <span className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-semibold">
+            <span className="bg-[#007ACC] text-white px-3 py-1.5 rounded-full text-xs font-semibold">
               Country: {results.filters.country}
             </span>
           )}
           {results.filters.type && (
-            <span className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-semibold">
+            <span className="bg-[#007ACC] text-white px-3 py-1.5 rounded-full text-xs font-semibold">
               Type: {results.filters.type}
             </span>
           )}
           {(results.filters.minDR || results.filters.maxDR) && (
-            <span className="bg-primary text-primary-foreground px-3 py-1.5 rounded-full text-xs font-semibold">
+            <span className="bg-[#007ACC] text-white px-3 py-1.5 rounded-full text-xs font-semibold">
               DR: {results.filters.minDR || 0}-{results.filters.maxDR || 100}
             </span>
           )}
@@ -187,44 +187,44 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
 
       {/* Publishers Table */}
       <div 
-        className="rounded-lg overflow-hidden bg-card border border-border"
+        className="rounded-lg overflow-hidden bg-[#2D2D2D] border border-[#333333]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-muted">
+            <thead className="bg-[#1E1E1E]">
               <tr>
-                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-foreground">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-[#E0E0E0]">
                   WEBSITE
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-foreground">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-[#E0E0E0]">
                   NICHE
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-foreground">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-[#E0E0E0]">
                   COUNTRY/LANG
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-foreground">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-[#E0E0E0]">
                   AUTHORITY
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-foreground">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-[#E0E0E0]">
                   SPAM
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-foreground">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-[#E0E0E0]">
                   PRICE
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-foreground">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-[#E0E0E0]">
                   TREND
                 </th>
-                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-foreground">
+                <th className="px-6 py-4 text-left text-xs font-bold uppercase tracking-wide text-[#E0E0E0]">
                   CART
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-border">
+            <tbody className="divide-y divide-[#333333]">
               {results.publishers.map((publisher) => (
                 <tr 
                   key={publisher.id} 
-                  className="transition-all duration-150 bg-card hover:bg-muted/50"
+                  className="transition-all duration-150 bg-[#2D2D2D] hover:bg-[#333333]"
                 >
                   {/* Website Column */}
                   <td className="px-6 py-5">
@@ -236,29 +236,29 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
                             className={`size-4 ${
                               i < publisher.rating
                                 ? "text-yellow-400 fill-current"
-                                : "text-muted-foreground"
+                                : "text-[#666666]"
                             }`}
                           />
                         ))}
                       </div>
                       <div className="flex flex-col space-y-2 min-w-0 flex-1">
                         <div className="flex items-center space-x-2">
-                          <span className="text-sm font-semibold truncate text-foreground">
+                          <span className="text-sm font-semibold truncate text-[#E0E0E0]">
                             {publisher.websiteName}
                           </span>
-                          <ExternalLink className="size-3.5 flex-shrink-0 text-primary" />
+                          <ExternalLink className="size-3.5 flex-shrink-0 text-[#569CD6]" />
                         </div>
                         <div className="flex flex-wrap gap-2">
                           {publisher.doFollow && (
                             <span 
-                              className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-primary text-primary-foreground"
+                              className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-[#007ACC] text-white"
                             >
                               <ExternalLink className="size-3 mr-1.5" />
                               Do-follow
                             </span>
                           )}
                           <span 
-                            className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-muted text-muted-foreground"
+                            className="inline-flex items-center px-2.5 py-1 rounded-md text-xs font-medium bg-[#1E1E1E] text-[#A0A0A0]"
                           >
                             <ExternalLink className="size-3 mr-1.5" />
                             Outbound {publisher.outboundLinks}
@@ -275,7 +275,7 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
                         {publisher.niche.map((n, index) => (
                           <span
                             key={index}
-                            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-primary text-primary-foreground"
+                            className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-[#007ACC] text-white"
                           >
                             {n}
                           </span>
@@ -293,14 +293,14 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
                   <td className="px-6 py-5">
                     <div className="space-y-1.5">
                       <div>
-                        <span className="text-sm font-semibold text-foreground">
+                        <span className="text-sm font-semibold text-[#E0E0E0]">
                           {publisher.language}
                         </span>
                       </div>
-                      <div className="text-xs font-medium text-muted-foreground">
+                      <div className="text-xs font-medium text-[#A0A0A0]">
                         Country: {publisher.country}
                       </div>
-                      <div className="text-xs font-medium text-muted-foreground">
+                      <div className="text-xs font-medium text-[#A0A0A0]">
                         Language: {publisher.language}
                       </div>
                     </div>
@@ -310,25 +310,25 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
                   <td className="px-6 py-5">
                     <div className="space-y-2">
                       <div className="flex items-center space-x-2">
-                        <span className="text-xs font-semibold text-muted-foreground">DR</span>
+                        <span className="text-xs font-semibold text-[#A0A0A0]">DR</span>
                         <span 
-                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-primary text-primary-foreground"
+                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#007ACC] text-white"
                         >
                           {publisher.authority.dr}
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="text-xs font-semibold text-muted-foreground">DA</span>
+                        <span className="text-xs font-semibold text-[#A0A0A0]">DA</span>
                         <span 
-                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-primary text-primary-foreground"
+                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#007ACC] text-white"
                         >
                           {publisher.authority.da}
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <span className="text-xs font-semibold text-muted-foreground">AS</span>
+                        <span className="text-xs font-semibold text-[#A0A0A0]">AS</span>
                         <span 
-                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-primary text-primary-foreground"
+                          className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-[#007ACC] text-white"
                         >
                           {publisher.authority.as}
                         </span>
@@ -348,13 +348,13 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
                   {/* Price Column */}
                   <td className="px-6 py-5">
                     <div className="space-y-1.5">
-                      <div className="text-sm font-bold text-foreground">
+                      <div className="text-sm font-bold text-[#569CD6]">
                         ${publisher.pricing.base}
                       </div>
-                      <div className="text-xs font-medium text-muted-foreground">
+                      <div className="text-xs font-medium text-[#A0A0A0]">
                         Base: ${publisher.pricing.base}
                       </div>
-                      <div className="text-xs font-medium text-muted-foreground">
+                      <div className="text-xs font-medium text-[#A0A0A0]">
                         With Content: ${publisher.pricing.withContent}
                       </div>
                     </div>
@@ -364,7 +364,7 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
                   <td className="px-6 py-5">
                     <div className="flex items-center space-x-2">
                       {getTrendIcon(publisher.trend)}
-                      <span className="text-sm font-semibold text-foreground">
+                      <span className="text-sm font-semibold text-[#E0E0E0]">
                         {publisher.trend}
                       </span>
                     </div>
@@ -380,8 +380,8 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
                         }}
                         className={`inline-flex items-center px-3 py-1.5 rounded-md text-xs font-semibold transition-all duration-150 ${
                           optimisticCartItems.has(publisher.id)
-                            ? "bg-green-600 dark:bg-green-700 hover:bg-green-700 dark:hover:bg-green-800 text-white"
-                            : "bg-primary hover:bg-primary/90 text-primary-foreground"
+                            ? "bg-[#6A9955] hover:bg-[#6A9955]/90 text-white"
+                            : "bg-[#569CD6] hover:bg-[#00C0C0] text-white"
                         }`}
                       >
                         <ShoppingCart className="size-3.5 mr-1.5" />
@@ -392,10 +392,10 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
                           e.stopPropagation();
                           toggleWishlist(publisher.id);
                         }}
-                        className={`p-1.5 rounded-md transition-all duration-150 hover:bg-muted ${
+                        className={`p-1.5 rounded-md transition-all duration-150 hover:bg-[#333333] ${
                           wishlist.has(publisher.id) 
-                            ? "text-destructive" 
-                            : "text-muted-foreground"
+                            ? "text-[#CD3131]" 
+                            : "text-[#A0A0A0]"
                         }`}
                       >
                         <Heart
@@ -415,21 +415,21 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
 
       {/* Summary Stats */}
       <div 
-        className="rounded-lg p-4 bg-card border border-border"
+        className="rounded-lg p-4 bg-[#2D2D2D] border border-[#333333]"
       >
         <div className="flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center space-x-6 flex-wrap">
-            <span className="text-sm text-muted-foreground">
-              <span className="font-bold text-foreground">{results.metadata.totalCount}</span> publishers
+            <span className="text-sm text-[#A0A0A0]">
+              <span className="font-bold text-[#E0E0E0]">{results.metadata.totalCount}</span> publishers
             </span>
-            <span className="text-sm text-muted-foreground">
-              Avg DR: <span className="font-bold text-foreground">{results.metadata.averageDR}</span>
+            <span className="text-sm text-[#A0A0A0]">
+              Avg DR: <span className="font-bold text-[#569CD6]">{results.metadata.averageDR}</span>
             </span>
-            <span className="text-sm text-muted-foreground">
-              Avg DA: <span className="font-bold text-foreground">{results.metadata.averageDA}</span>
+            <span className="text-sm text-[#A0A0A0]">
+              Avg DA: <span className="font-bold text-[#569CD6]">{results.metadata.averageDA}</span>
             </span>
-            <span className="text-sm text-muted-foreground">
-              Price: <span className="font-bold text-foreground">${results.metadata.priceRange.min}-${results.metadata.priceRange.max}</span>
+            <span className="text-sm text-[#A0A0A0]">
+              Price: <span className="font-bold text-[#569CD6]">${results.metadata.priceRange.min}-${results.metadata.priceRange.max}</span>
             </span>
           </div>
         </div>

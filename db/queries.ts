@@ -1,7 +1,7 @@
 import "server-only";
 
 import { genSaltSync, hashSync } from "bcrypt-ts";
-import { desc, eq, and } from "drizzle-orm";
+import { desc, eq, and, sql } from "drizzle-orm";
 import { drizzle } from "drizzle-orm/postgres-js";
 import postgres from "postgres";
 
@@ -67,11 +67,12 @@ export async function saveChat({
   summary?: string;
 }) {
   try {
-    const selectedChats = await db.select().from(chat).where(eq(chat.id, id));
+    const messagesJson = JSON.stringify(messages);
+    const now = new Date();
 
     const updateData: any = {
-      messages: JSON.stringify(messages),
-      updatedAt: new Date(),
+      messages: messagesJson,
+      updatedAt: now,
     };
     
     if (title !== undefined) {
@@ -82,22 +83,37 @@ export async function saveChat({
       updateData.summary = summary;
     }
 
-    if (selectedChats.length > 0) {
-      return await db
-        .update(chat)
-        .set(updateData)
-        .where(eq(chat.id, id));
-    }
+    // Optimistic approach: try insert first (faster for new chats)
+    // If it fails due to duplicate key (race condition), fall back to update
+    try {
+      return await db.insert(chat).values({
+        id,
+        createdAt: now,
+        updatedAt: now,
+        messages: messagesJson as any,
+        userId,
+        title: title || null,
+        summary: summary || null,
+      });
+    } catch (insertError: any) {
+      // Check if it's a duplicate key error (PostgreSQL error code 23505)
+      const isDuplicateKey = 
+        insertError?.code === '23505' ||
+        insertError?.severity === 'ERROR' ||
+        (typeof insertError?.message === 'string' && 
+         insertError.message.includes('duplicate key') &&
+         insertError.message.includes('Chat_pkey'));
 
-    return await db.insert(chat).values({
-      id,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      messages: JSON.stringify(messages),
-      userId,
-      title: title || null,
-      summary: summary || null,
-    });
+      if (isDuplicateKey) {
+        // Chat was created by another request (race condition), update instead
+        return await db
+          .update(chat)
+          .set(updateData)
+          .where(eq(chat.id, id));
+      }
+      // Re-throw if it's a different error
+      throw insertError;
+    }
   } catch (error) {
     console.error("Failed to save chat in database");
     throw error;

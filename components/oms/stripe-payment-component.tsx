@@ -118,19 +118,19 @@ export default function StripePaymentComponent({
           appearance: {
             theme: (isDark ? 'night' : 'flat') as any,
             variables: {
-              colorPrimary: '#00BCD4', // Teal accent color from screenshot
-              colorText: isDark ? '#FFFFFF' : '#1E1E1E',
+              colorPrimary: '#569CD6', // Oceanic blue accent
+              colorText: isDark ? '#E0E0E0' : '#1E1E1E',
               colorBackground: isDark ? '#1E1E1E' : '#FFFFFF',
-              colorDanger: '#EF4444',
+              colorDanger: '#CD3131',
               fontFamily: 'Inter, ui-sans-serif, system-ui, -apple-system',
-              borderRadius: '8px',
+              borderRadius: '6px',
             },
             rules: {
               '.Input, .Input:focus': {
                 border: '1px solid',
-                borderColor: isDark ? '#404040' : '#E5E7EB',
+                borderColor: isDark ? '#333333' : '#E5E7EB',
                 backgroundColor: isDark ? '#2D2D2D' : '#FFFFFF',
-                color: isDark ? '#FFFFFF' : '#1E1E1E',
+                color: isDark ? '#E0E0E0' : '#1E1E1E',
               },
               '.Label': {
                 color: isDark ? '#A0A0A0' : '#737373',
@@ -138,15 +138,15 @@ export default function StripePaymentComponent({
               '.Tab, .Pill': {
                 backgroundColor: isDark ? '#2D2D2D' : '#FFFFFF',
                 border: '1px solid',
-                borderColor: isDark ? '#404040' : '#E5E7EB',
+                borderColor: isDark ? '#333333' : '#E5E7EB',
               },
               '.Tab--selected, .Pill--selected': {
                 backgroundColor: isDark ? '#1E1E1E' : '#F3F4F6',
-                borderColor: '#00BCD4',
-                color: isDark ? '#FFFFFF' : '#1E1E1E',
+                borderColor: '#569CD6',
+                color: isDark ? '#E0E0E0' : '#1E1E1E',
               },
               '.Error': {
-                color: '#EF4444',
+                color: '#CD3131',
               },
             },
           },
@@ -156,21 +156,21 @@ export default function StripePaymentComponent({
 
   if (error && !clientSecret) {
     return (
-      <Card className="border-red-200 dark:border-red-800">
+      <Card className="border-[#CD3131] bg-[#2D2D2D]">
         <CardContent className="p-6">
-          <div className="flex items-center space-x-3 text-red-600 dark:text-red-400">
+          <div className="flex items-center space-x-3 text-[#CD3131]">
             <AlertCircle className="h-5 w-5" />
-            <span className="font-medium">Payment Error</span>
+            <span className="font-medium text-[#E0E0E0]">Payment Error</span>
           </div>
-          <p className="text-red-600 dark:text-red-400 text-sm mt-2">{error}</p>
+          <p className="text-[#CD3131] text-sm mt-2">{error}</p>
           <div className="mt-4 space-y-2">
-            <p className="text-xs text-gray-500 dark:text-gray-400">
+            <p className="text-xs text-[#A0A0A0]">
               Debug info: Amount: ${amount}, Items: {items.length}
             </p>
             <Button 
               variant="outline" 
               onClick={onCancel}
-              className="mt-2"
+              className="mt-2 border-[#333333] bg-[#2D2D2D] text-[#E0E0E0] hover:bg-[#333333] hover:border-[#569CD6]"
             >
               Go Back
             </Button>
@@ -181,32 +181,32 @@ export default function StripePaymentComponent({
   }
 
   return (
-    <Card>
+    <Card className="bg-[#2D2D2D] border-[#333333]">
       <CardHeader>
-        <CardTitle className="flex items-center space-x-2">
-          <CreditCard className="h-5 w-5 text-violet-600 dark:text-violet-400" />
+        <CardTitle className="flex items-center space-x-2 text-[#E0E0E0]">
+          <CreditCard className="h-5 w-5 text-[#569CD6]" />
           <span>Complete Payment</span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-6">
         {/* Order Summary */}
-        <div className="bg-gray-50 dark:bg-gray-800/50 rounded-lg p-4">
-          <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-3">Order Summary</h4>
+        <div className="bg-[#1E1E1E] rounded-lg p-4 border border-[#333333]">
+          <h4 className="font-medium text-[#E0E0E0] mb-3">Order Summary</h4>
           <div className="space-y-2">
             {items.map((item) => (
               <div key={item.id} className="flex justify-between text-xs">
-                <span className="text-gray-600 dark:text-gray-400">
+                <span className="text-[#A0A0A0]">
                   {item.name} × {item.quantity}
                 </span>
-                <span className="text-gray-900 dark:text-gray-100">
+                <span className="text-[#E0E0E0]">
                   ${(item.price * item.quantity).toFixed(2)}
                 </span>
               </div>
             ))}
-            <div className="border-t border-gray-200 dark:border-gray-700 pt-2">
+            <div className="border-t border-[#333333] pt-2">
               <div className="flex justify-between font-medium">
-                <span className="text-gray-900 dark:text-gray-100">Total</span>
-                <span className="text-gray-900 dark:text-gray-100">
+                <span className="text-[#E0E0E0]">Total</span>
+                <span className="text-[#569CD6]">
                   ${amount.toFixed(2)}
                 </span>
               </div>
@@ -217,11 +217,11 @@ export default function StripePaymentComponent({
         {/* Payment Form */}
         {!clientSecret ? (
           <div className="text-center py-8">
-            <div className="text-xs text-gray-600 dark:text-gray-400">
+            <div className="text-xs text-[#A0A0A0]">
               {loading ? 'Creating payment session…' : 'Preparing payment…'}
             </div>
             {error && (
-              <div className="mt-2 text-xs text-red-500">
+              <div className="mt-2 text-xs text-[#CD3131]">
                 Error: {error}
               </div>
             )}
@@ -238,8 +238,8 @@ export default function StripePaymentComponent({
         )}
 
         {/* Security Notice */}
-        <div className="flex items-center space-x-2 text-xs text-gray-500 dark:text-gray-400">
-          <Shield className="h-4 w-4" />
+        <div className="flex items-center space-x-2 text-xs text-[#A0A0A0]">
+          <Shield className="h-4 w-4 text-[#569CD6]" />
           <span>Your payment information is secure and encrypted</span>
         </div>
       </CardContent>
@@ -301,23 +301,24 @@ function PaymentForm({
   if (success) {
     return (
       <div className="text-center py-8">
-        <div className="flex items-center justify-center space-x-2 text-green-600 dark:text-green-400 mb-2">
+        <div className="flex items-center justify-center space-x-2 text-[#6A9955] mb-2">
           <CheckCircle className="h-6 w-6" />
-          <span className="font-medium">{success}</span>
+          <span className="font-medium text-[#E0E0E0]">{success}</span>
         </div>
-        <p className="text-xs text-gray-600 dark:text-gray-400 mb-4">
+        <p className="text-xs text-[#A0A0A0] mb-4">
           Your order has been placed successfully.
         </p>
         <div className="flex space-x-2 justify-center">
           <Button 
             onClick={() => window.location.href = '/orders'}
-            className="bg-violet-600 hover:bg-violet-700"
+            className="bg-[#569CD6] hover:bg-[#00C0C0] text-white"
           >
             View Orders
           </Button>
           <Button 
             variant="outline"
             onClick={() => window.location.href = '/publishers'}
+            className="border-[#333333] bg-[#2D2D2D] text-[#E0E0E0] hover:bg-[#333333] hover:border-[#569CD6]"
           >
             Continue Shopping
           </Button>
@@ -328,12 +329,12 @@ function PaymentForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg p-4">
+      <div className="bg-[#2D2D2D] border border-[#333333] rounded-lg p-4">
         <PaymentElement />
       </div>
       
       {error && (
-        <div className="flex items-center space-x-2 text-red-600 dark:text-red-400 text-xs">
+        <div className="flex items-center space-x-2 text-[#CD3131] text-xs">
           <AlertCircle className="h-4 w-4" />
           <span>{error}</span>
         </div>
@@ -343,7 +344,7 @@ function PaymentForm({
         <Button 
           type="submit" 
           disabled={loading || !stripe}
-          className="flex-1 bg-violet-600 hover:bg-violet-700 text-white"
+          className="flex-1 bg-[#569CD6] hover:bg-[#00C0C0] text-white"
         >
           {loading ? 'Processing…' : `Pay $${amount.toFixed(2)}`}
         </Button>
@@ -353,12 +354,13 @@ function PaymentForm({
           variant="outline"
           onClick={onCancel}
           disabled={loading}
+          className="border-[#333333] bg-[#2D2D2D] text-[#E0E0E0] hover:bg-[#333333] hover:border-[#569CD6]"
         >
           Cancel
         </Button>
       </div>
       
-      <div className="text-xs text-gray-500 dark:text-gray-400 text-center">
+      <div className="text-xs text-[#A0A0A0] text-center">
         You&apos;ll be charged ${amount.toFixed(2)}, including applicable taxes
       </div>
     </form>

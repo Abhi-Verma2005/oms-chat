@@ -1,7 +1,5 @@
 "use client";
 
-import React from "react";
-
 import { ToolSummaryProps } from "./types";
 
 /**
@@ -17,8 +15,8 @@ export function ToolSummaryCard({
   onClick,
 }: ToolSummaryProps) {
   const defaultIcon = (
-    <div className="p-1 bg-ui-teal/10 rounded">
-      <div className="size-3 bg-ui-teal rounded-sm flex items-center justify-center">
+    <div className="p-1 bg-[#569CD6]/10 rounded">
+      <div className="size-3 bg-[#569CD6] rounded-sm flex items-center justify-center">
         <div className={`size-1.5 bg-white rounded-full ${loading ? 'animate-pulse' : ''}`}></div>
       </div>
     </div>
@@ -27,9 +25,9 @@ export function ToolSummaryCard({
   return (
     <div
       onClick={clickable && !loading ? onClick : undefined}
-      className={`relative bg-card rounded-lg p-4 transition-all duration-200 hover:shadow-md w-full ${
-        clickable && !loading ? 'hover:bg-card/80 cursor-pointer' : ''
-      } ${loading ? 'border-2 border-border' : 'border border-border'}`}
+      className={`relative bg-[#2D2D2D] border border-[#333333] rounded-lg p-4 transition-all duration-200 hover:shadow-md w-full ${
+        clickable && !loading ? 'hover:bg-[#333333] cursor-pointer hover:border-[#569CD6]/50' : ''
+      } ${loading ? 'border-2 border-[#569CD6]/50' : 'border-[#333333]'}`}
     >
       {/* Animated border light when loading */}
       {loading && (
@@ -37,12 +35,12 @@ export function ToolSummaryCard({
           <div 
             className="absolute inset-0"
             style={{
-              background: 'linear-gradient(90deg, transparent 0%, hsl(var(--primary)) 50%, transparent 100%)',
+              background: 'linear-gradient(90deg, transparent 0%, #569CD6 50%, transparent 100%)',
               backgroundSize: '200% 100%',
               animation: 'border-light-border 2s ease-in-out infinite'
             }}
           ></div>
-          <div className="absolute inset-[2px] rounded-lg bg-card"></div>
+          <div className="absolute inset-[2px] rounded-lg bg-[#2D2D2D]"></div>
         </div>
       )}
       
@@ -50,13 +48,13 @@ export function ToolSummaryCard({
         <div className="flex items-center justify-between gap-3 mb-2">
           <div className="flex items-center gap-2">
             {icon || defaultIcon}
-            <h3 className="text-foreground font-medium text-sm whitespace-nowrap">{title}</h3>
+            <h3 className="text-[#E0E0E0] font-medium text-sm whitespace-nowrap">{title}</h3>
           </div>
           {clickable && !loading && (
-            <span className="text-muted-foreground text-xs">Expand →</span>
+            <span className="text-[#A0A0A0] text-xs">Expand →</span>
           )}
         </div>
-        <div className="text-xs text-muted-foreground">
+        <div className="text-xs text-[#A0A0A0]">
           {children}
         </div>
       </div>

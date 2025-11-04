@@ -1,6 +1,7 @@
 "use client";
 
 import { Attachment, Message, ToolInvocation } from "ai";
+import { useRouter } from "next/navigation";
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { Panel, PanelGroup, PanelResizeHandle } from "react-resizable-panels";
 
@@ -8,42 +9,16 @@ import { LeftSidebar } from "./left-sidebar";
 import { Message as PreviewMessage } from "./message";
 import { MultimodalInput } from "./multimodal-input";
 import { RightPanel } from "./RightPanel";
-import { useScrollToBottom } from "./use-scroll-to-bottom";
+import { useScrollToBottom, useClaudeScroll, useEnhancedClaudeScroll } from "./use-scroll-to-bottom";
 import { useCart } from "../../contexts/cart-context";
 import { useSplitScreen } from "../../contexts/SplitScreenProvider";
 import { useUserInfo } from "../../contexts/UserInfoProvider";
 import { useWebSocket, MessageType, ChatMessage } from "../../contexts/websocket-context";
 
-// Time-based greeting generator
-const getTimeBasedGreeting = () => {
-  const hour = new Date().getHours();
-  
-  if (hour >= 5 && hour < 12) {
-    return {
-      emoji: "☕",
-      greeting: "Good morning!",
-      subtitle: "Coffee and OMS time?",
-    };
-  } else if (hour >= 12 && hour < 17) {
-    return {
-      emoji: "🌤️",
-      greeting: "Good afternoon!",
-      subtitle: "Ready to discover?",
-    };
-  } else if (hour >= 17 && hour < 21) {
-    return {
-      emoji: "🌆",
-      greeting: "Good evening!",
-      subtitle: "Let's get things done",
-    };
-  } else {
-    return {
-      emoji: "🌙",
-      greeting: "Good night!",
-      subtitle: "Working late? OMS is here",
-    };
-  }
-};
+// Helper functions for localStorage draft keys
+const getPerChatDraftKey = (chatId: string) => `chat_draft_${chatId}`;
+const NEW_CHAT_DRAFT_KEY = `chat_draft_new`;
+
 
 export function Chat({
   id,
@@ -54,9 +29,13 @@ export function Chat({
   initialMessages: Array<Message>;
   user?: any;
 }) {
+  const router = useRouter();
   const { userInfo } = useUserInfo();
-  const { state: cartState } = useCart();
+  const { state: cartState, addItem: addItemToCart } = useCart();
+  const { setRightPanelContent } = useSplitScreen();
   const { sendMessage, joinChat, leaveChat, onEvent, state: wsState } = useWebSocket();
+  const wsCtx = useWebSocket();
+  const [isCreatingChat, setIsCreatingChat] = useState(false);
   
   // Clean up initialMessages: merge empty assistant messages with tool invocations into adjacent messages
   const cleanedInitialMessages = useMemo(() => {
@@ -130,20 +109,73 @@ export function Chat({
 
   // Convert initialMessages to internal format and manage state
   const [messages, setMessages] = useState<Array<Message>>(cleanedInitialMessages);
+  // Input state (draft restored via effect below)
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const saveDraftTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [streamingContent, setStreamingContent] = useState<{ [messageId: string]: string }>({});
   const [loadingTools, setLoadingTools] = useState<Set<string>>(new Set());
   const currentAssistantMessageIdRef = useRef<string | null>(null);
   const stopRequestedRef = useRef(false);
   const lastUserMessageRef = useRef<string | null>(null);
 
-  const [messagesContainerRef, messagesEndRef] =
-    useScrollToBottom<HTMLDivElement>(!isLoading);
+  // Get last message ID for streaming scroll tracking
+  const lastMessageId = useMemo(() => {
+    if (messages.length === 0) return undefined;
+    return messages[messages.length - 1].id;
+  }, [messages]);
+
+  const [messagesContainerRef, scrollToMessage] =
+    useEnhancedClaudeScroll<HTMLDivElement>(!isLoading, isLoading, lastMessageId);
 
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
   const { isRightPanelOpen } = useSplitScreen();
   const [isLeftSidebarCollapsed, setIsLeftSidebarCollapsed] = useState(true);
+
+  // Load draft when chat ID or message count changes
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        // Prefer new-chat draft when there are no messages yet
+        const key = messages.length === 0 ? NEW_CHAT_DRAFT_KEY : getPerChatDraftKey(id);
+        const saved = localStorage.getItem(key);
+        if (typeof saved === 'string') {
+          setInput(saved);
+        }
+      } catch {
+        // Ignore localStorage errors
+      }
+    }
+  }, [id, messages.length]);
+
+  // Save draft to localStorage whenever input changes (debounced)
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      // Clear previous timeout
+      if (saveDraftTimeoutRef.current) {
+        clearTimeout(saveDraftTimeoutRef.current);
+      }
+      // Save after 300ms of no typing
+      saveDraftTimeoutRef.current = setTimeout(() => {
+        try {
+          const key = messages.length === 0 ? NEW_CHAT_DRAFT_KEY : getPerChatDraftKey(id);
+          if (input.trim()) {
+            localStorage.setItem(key, input);
+          } else {
+            // Clear if empty
+            localStorage.removeItem(key);
+          }
+        } catch {
+          // Ignore localStorage errors (quota exceeded, etc.)
+        }
+      }, 300);
+      return () => {
+        if (saveDraftTimeoutRef.current) {
+          clearTimeout(saveDraftTimeoutRef.current);
+        }
+      };
+    }
+  }, [input, id, messages.length]);
 
   // Join chat on mount
   useEffect(() => {
@@ -154,6 +186,37 @@ export function Chat({
       leaveChat(id);
     };
   }, [id, wsState, joinChat, leaveChat]);
+
+  // If we navigated after creating a new chat, pick up the pending first message and send it
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (wsState !== "connected") return;
+    try {
+      const key = `pending_first_message_${id}`;
+      const raw = sessionStorage.getItem(key);
+      if (!raw) return;
+      const pending = JSON.parse(raw) as Message;
+      // Send via WebSocket; UI likely already shows this message from DB
+      if (pending?.content) {
+        sendMessage({
+          chat_id: id,
+          message: {
+            room_id: id,
+            payload: { role: "user", content: pending.content },
+          },
+        });
+        setIsLoading(true);
+        stopRequestedRef.current = false;
+        // Align the pending message to top in the viewport
+        setTimeout(() => {
+          scrollToMessage(`msg-${pending.id}`);
+        }, 0);
+      }
+      sessionStorage.removeItem(key);
+      // Clear any leftover new-chat draft
+      localStorage.removeItem(NEW_CHAT_DRAFT_KEY);
+    } catch {}
+  }, [id, wsState, sendMessage, scrollToMessage]);
 
   // Handle WebSocket events
   useEffect(() => {
@@ -642,6 +705,192 @@ export function Chat({
       });
     });
 
+    // Handle cart data - update tool invocations and show cart in sidebar (like PublishersData)
+    const unsubscribeCartData = onEvent(MessageType.CartData, (payload: unknown) => {
+      const data = payload as { 
+        action: 'show' | 'checkout'; 
+        summary?: {
+          totalItems: number;
+          totalQuantity: number;
+          totalPrice: number;
+          isEmpty: boolean;
+        };
+        cartData?: {
+          items: unknown[];
+          totalItems: number;
+          totalPrice: number;
+        };
+        message?: string;
+      };
+      console.log("[Chat] CartData received:", data);
+      
+      // Remove viewCart from loadingTools since we have the data
+      setLoadingTools((prev) => {
+        const updated = new Set(prev);
+        updated.delete("viewCart");
+        return updated;
+      });
+      
+      // Update viewCart tool invocations to result state (similar to PublishersData)
+      if (data.summary) {
+        const cartSummary = {
+          summary: data.summary,
+          cartData: data.cartData || {
+            items: [],
+            totalItems: data.summary.totalItems,
+            totalPrice: data.summary.totalPrice
+          },
+          success: true,
+          message: data.message || (data.summary.isEmpty ? "Cart is empty" : "Cart displayed")
+        };
+        
+        setMessages((prev) => {
+          const updated = [...prev];
+          // Find all messages with tool invocations (viewCart)
+          for (let i = updated.length - 1; i >= 0; i--) {
+            const message = updated[i];
+            if (message.toolInvocations && message.toolInvocations.length > 0) {
+              // Find ALL viewCart tool invocations (in case there are duplicates)
+              const viewCartIndices = message.toolInvocations
+                .map((inv, idx) => inv.toolName === "viewCart" && inv.state === "call" ? idx : -1)
+                .filter(idx => idx !== -1);
+              
+              if (viewCartIndices.length > 0) {
+                const newToolInvocations = [...(message.toolInvocations || [])];
+                // Update all "call" state viewCart invocations to "result"
+                viewCartIndices.forEach((idx) => {
+                  newToolInvocations[idx] = {
+                    ...newToolInvocations[idx],
+                    state: "result",
+                    result: cartSummary,
+                  };
+                });
+                const updatedMessage = {
+                  ...updated[i],
+                  toolInvocations: newToolInvocations,
+                };
+                updated[i] = updatedMessage;
+
+                // Save the updated message with cart data to DB
+                if (user && updatedMessage.role === "assistant") {
+                  fetch("/api/chat/message", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                      chatId: id,
+                      message: updatedMessage,
+                    }),
+                  })
+                    .then((res) => {
+                      if (!res.ok) {
+                        console.error("[Chat] Failed to save cart data:", res.status, res.statusText);
+                      } else {
+                        console.log("[Chat] Successfully saved message with cart data to DB");
+                      }
+                    })
+                    .catch((err) => {
+                      console.error("[Chat] Failed to save cart data:", err);
+                    });
+                }
+              }
+            }
+          }
+          return updated;
+        });
+      }
+      
+      if (data.action === 'show') {
+        // Show cart in sidebar
+        import('../oms/cart-management-results').then(({ default: CartManagementResults }) => {
+          const items = cartState.items || [];
+          const cartData = {
+            items: items,
+            totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
+            totalPrice: items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+            lastUpdated: new Date()
+          };
+          
+          setRightPanelContent(
+            <CartManagementResults 
+              data={{
+                success: true,
+                message: data.message || "Your cart",
+                cartData
+              }}
+              onDoneAddingToCart={() => {
+                // When user clicks checkout, trigger processPayment
+                const cartItems = (cartState.items || []).map(item => ({
+                  id: item.id,
+                  name: item.name,
+                  price: item.price,
+                  quantity: item.quantity
+                }));
+                // This will be handled by the AI calling processPayment
+              }}
+            />
+          );
+          // setRightPanelContent automatically opens the panel
+        });
+      } else if (data.action === 'checkout') {
+        // Show payment component
+        import('../oms/stripe-payment-component').then(({ default: StripePaymentComponent }) => {
+          const items = cartState.items || [];
+          const totalAmount = items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+          const stripeItems = items.map(item => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity
+          }));
+          
+          setRightPanelContent(
+            <div className="p-4">
+              <StripePaymentComponent
+                amount={totalAmount * 1.08} // Include tax
+                items={stripeItems}
+                onPaymentSuccess={(paymentIntent) => {
+                  console.log('Payment successful:', paymentIntent);
+                  // Clear cart after successful payment
+                  // Trigger AI acknowledgment
+                }}
+                onPaymentError={(error) => {
+                  console.error('Payment error:', error);
+                }}
+              />
+            </div>
+          );
+          // setRightPanelContent automatically opens the panel
+        });
+      }
+    });
+
+    // Handle cart updated - add item to cart
+    const unsubscribeCartUpdated = onEvent(MessageType.CartUpdated, (payload: unknown) => {
+      const data = payload as { action: 'add'; item: { type: "publisher" | "product"; name: string; price: number; quantity: number; metadata?: unknown } };
+      console.log("[Chat] CartUpdated received:", data);
+      
+      if (data.action === 'add' && data.item) {
+        // Generate a cart ID for the item
+        const cartId = `cart_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+        
+        addItemToCart({
+          id: cartId,
+          type: data.item.type,
+          name: data.item.name,
+          price: data.item.price,
+          quantity: data.item.quantity,
+          addedAt: new Date(),
+          metadata: data.item.metadata as {
+            publisherId?: string;
+            website?: string;
+            niche?: string[];
+            dr?: number;
+            da?: number;
+          }
+        });
+      }
+    });
+
     // Handle errors
     const unsubscribeError = onEvent(MessageType.Error, (payload: unknown) => {
       const data = payload as { error: string };
@@ -658,9 +907,11 @@ export function Chat({
       unsubscribeFunctionCall();
       unsubscribeFunctionResult();
       unsubscribePublishersData();
+      unsubscribeCartData();
+      unsubscribeCartUpdated();
       unsubscribeError();
     };
-  }, [onEvent, streamingContent, id, user]);
+  }, [onEvent, streamingContent, id, user, cartState.items, addItemToCart, setRightPanelContent, setMessages, setLoadingTools]);
 
   // Update messages when streaming content changes
   useEffect(() => {
@@ -717,10 +968,46 @@ export function Chat({
       content: userMessage.content,
     };
     
-    // Add to state immediately
+    // If first message in a new chat: create chat, redirect, then stream
+    if (messages.length === 0) {
+      try {
+        setIsCreatingChat(true);
+        const res = await fetch("/api/chat/create", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: userMsg }),
+        });
+        if (!res.ok) {
+          console.error("[Chat] Failed to create chat:", res.status, res.statusText);
+          setIsCreatingChat(false);
+          return;
+        }
+        const data = await res.json();
+        const newId = data?.id as string;
+        if (!newId) { setIsCreatingChat(false); return; }
+
+        try {
+          sessionStorage.setItem(`pending_first_message_${newId}`, JSON.stringify(userMsg));
+          localStorage.removeItem(NEW_CHAT_DRAFT_KEY);
+        } catch {}
+
+        setIsLoading(true);
+        stopRequestedRef.current = false;
+        router.push(`/chat/${newId}`);
+        return;
+      } catch (e) {
+        console.error("[Chat] Exception creating chat:", e);
+        setIsCreatingChat(false);
+        return;
+      }
+    }
+
+    // Existing chat: proceed normally
     setMessages((prev) => [...prev, userMsg]);
-    
-    // Save to database immediately (don't await - but ensure it runs)
+    // Scroll so the just-sent user message is positioned at the top of the scroll container
+    setTimeout(() => {
+      scrollToMessage(`msg-${userMsgId}`);
+    }, 0);
     if (user) {
       fetch("/api/chat/message", {
         method: "POST",
@@ -740,32 +1027,53 @@ export function Chat({
         });
     }
 
-    // Scroll to top immediately after adding user message
-    setTimeout(() => {
-      if (messagesContainerRef.current) {
-        messagesContainerRef.current.scrollTop = 0;
-      }
-    }, 0);
+    // Include cart data in message payload
+    const items = cartState.items || [];
+    const cartDataForBackend = items.length > 0 ? {
+      items: items.map(item => ({
+        id: item.id,
+        type: item.type,
+        name: item.name,
+        price: item.price,
+        quantity: item.quantity,
+        addedAt: item.addedAt.toISOString(),
+        metadata: item.metadata
+      })),
+      totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
+      totalPrice: items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+    } : undefined;
 
-    // Send message via WebSocket
     sendMessage({
       chat_id: id,
       message: {
         room_id: id,
-        payload: userMessage,
+        payload: {
+          ...userMessage,
+          ...(cartDataForBackend && { cartData: cartDataForBackend })
+        },
       },
+      ...(cartDataForBackend && { cartData: cartDataForBackend })
     });
 
     setInput("");
     setIsLoading(true);
     stopRequestedRef.current = false;
-  }, [input, isLoading, wsState, id, sendMessage, messagesContainerRef, user]);
+    if (typeof window !== "undefined") {
+      try {
+        localStorage.removeItem(NEW_CHAT_DRAFT_KEY);
+        localStorage.removeItem(getPerChatDraftKey(id));
+      } catch {}
+    }
+  }, [input, isLoading, wsState, id, sendMessage, scrollToMessage, user, messages.length, router, cartState.items]);
 
   // Stop generation
   const stop = useCallback(() => {
     stopRequestedRef.current = true;
     setIsLoading(false);
-  }, []);
+    try {
+      (wsCtx as any).sendStop?.(id);
+    } catch {}
+  }, [id, wsCtx]);
 
   // Append message (for compatibility)
   const append = useCallback(async (message: Partial<Message>): Promise<string | null | undefined> => {
@@ -780,8 +1088,8 @@ export function Chat({
     
     // Scroll to top after adding message
     setTimeout(() => {
-      if (messagesContainerRef.current) {
-        messagesContainerRef.current.scrollTop = 0;
+      if (newMessage.id) {
+        scrollToMessage(`msg-${newMessage.id}`);
       }
     }, 0);
     
@@ -799,10 +1107,19 @@ export function Chat({
       });
       setIsLoading(true);
       stopRequestedRef.current = false;
+
+      // Clear any existing draft since a user message was sent via quick prompt
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.removeItem(NEW_CHAT_DRAFT_KEY);
+          localStorage.removeItem(getPerChatDraftKey(id));
+        } catch {}
+      }
+      setInput("");
     }
     
     return newMessage.id;
-  }, [wsState, id, sendMessage, messagesContainerRef]);
+  }, [wsState, id, sendMessage, scrollToMessage]);
 
   // Regenerate function (placeholder - would need backend support)
   const handleRegenerate = useCallback(() => {
@@ -811,27 +1128,17 @@ export function Chat({
   }, []);
 
   return (
-    <div className="flex flex-row h-dvh bg-background relative">
-      {/* Left Sidebar - Fixed width */}
-      <div className="w-16 h-full shrink-0 z-20">
+    <div className="h-dvh bg-background relative">
+      {/* Menu button - positioned absolutely */}
+      <div className="absolute left-4 top-4 z-30">
         <LeftSidebar 
           user={user} 
           onCollapseChange={setIsLeftSidebarCollapsed}
         />
       </div>
 
-      {/* Backdrop for sidebar when expanded */}
-      {!isLeftSidebarCollapsed && (
-        <div 
-          className="fixed inset-0 bg-black/20 backdrop-blur-sm z-10"
-          onClick={() => {
-            setIsLeftSidebarCollapsed(true);
-          }}
-        />
-      )}
-
       {/* Panel Group for resizable layout */}
-      <div className="flex-1 h-full min-w-0">
+      <div className="h-full w-full">
         <PanelGroup direction="horizontal" className="size-full">
           {/* Main Chat Area */}
           <Panel 
@@ -840,7 +1147,7 @@ export function Chat({
             className="flex flex-col relative"
           >
             <div 
-              className={`flex flex-col pb-4 md:pb-8 transition-all duration-300 h-full ${
+              className={`flex flex-col pb-2 md:pb-4 transition-all duration-300 h-full ${
                 messages.length === 0 ? 'justify-center items-center' : 'justify-between'
               }`}
             >
@@ -850,25 +1157,39 @@ export function Chat({
                   className="flex flex-col gap-4 w-full h-full items-center overflow-y-auto px-4"
                 >
                   {messages.map((message, index) => (
+                    <div id={`msg-${message.id}`} key={message.id} className={`w-full flex justify-center ${index === 0 ? 'pt-20' : ''}`}>
+                      <PreviewMessage
+                        chatId={id}
+                        role={message.role}
+                        content={message.content}
+                        attachments={message.experimental_attachments}
+                        toolInvocations={message.toolInvocations}
+                        onRegenerate={handleRegenerate}
+                        isLastMessage={index === messages.length - 1}
+                        isGenerating={isLoading && index === messages.length - 1 && message.role === "assistant"}
+                        onAppendMessage={append}
+                        loadingTools={loadingTools}
+                      />
+                    </div>
+                  ))}
+
+                  {/* Show "Thinking..." shimmer when loading but no assistant message exists yet */}
+                  {isLoading && (messages.length === 0 || messages[messages.length - 1]?.role === "user") && 
+                    Object.keys(streamingContent).length === 0 && (
                     <PreviewMessage
-                      key={message.id}
+                      key="thinking-placeholder"
                       chatId={id}
-                      role={message.role}
-                      content={message.content}
-                      attachments={message.experimental_attachments}
-                      toolInvocations={message.toolInvocations}
-                      onRegenerate={handleRegenerate}
-                      isLastMessage={index === messages.length - 1}
-                      isGenerating={isLoading && index === messages.length - 1}
+                      role="assistant"
+                      content=""
+                      isGenerating={true}
+                      toolInvocations={undefined}
                       onAppendMessage={append}
                       loadingTools={loadingTools}
                     />
-                  ))}
+                  )}
 
-                  <div
-                    ref={messagesEndRef}
-                    className="shrink-0 min-w-[24px] min-h-[24px]"
-                  />
+                  {/* Spacer for proper scrolling */}
+                  <div className="shrink-0 min-w-[24px] min-h-[24px]" />
                 </div>
               )}
 
@@ -879,6 +1200,7 @@ export function Chat({
                   handleSubmit={handleSubmit}
                   isLoading={isLoading}
                   stop={stop}
+                  isCreatingChat={isCreatingChat}
                   attachments={attachments}
                   setAttachments={setAttachments}
                   messages={messages}

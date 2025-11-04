@@ -42,16 +42,16 @@ export function PaymentRenderer({
   return (
     <div
       key={toolCallId}
-      className="bg-card border border-border rounded-lg p-4 hover:bg-card/80 transition-all duration-200 hover:shadow-md hover:border-ui-teal/50 w-fit max-w-full"
+      className="bg-[#2D2D2D] border border-[#333333] rounded-lg p-4 hover:bg-[#333333] transition-all duration-200 hover:shadow-md hover:border-[#569CD6]/50 w-fit max-w-full"
     >
       <div className="flex items-center justify-between gap-3 mb-3">
         <div className="flex items-center gap-2">
-          <div className="p-1 bg-ui-teal/10 rounded">
-            <div className="size-3 bg-ui-teal rounded-sm flex items-center justify-center">
+          <div className="p-1 bg-[#569CD6]/10 rounded">
+            <div className="size-3 bg-[#569CD6] rounded-sm flex items-center justify-center">
               <div className="size-1.5 bg-white rounded-full"></div>
             </div>
           </div>
-          <h3 className="text-foreground font-medium text-sm whitespace-nowrap">
+          <h3 className="text-[#E0E0E0] font-medium text-sm whitespace-nowrap">
             Checkout
           </h3>
         </div>
@@ -59,34 +59,34 @@ export function PaymentRenderer({
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
-          <span className="text-sm font-medium text-foreground">
+          <span className="text-sm font-medium text-[#E0E0E0]">
             {totalItems} items
           </span>
-          <span className="text-xs text-muted-foreground">Order Total</span>
+          <span className="text-xs text-[#A0A0A0]">Order Total</span>
         </div>
 
         <div className="space-y-1">
           {cartState.items.slice(0, 2).map((item, index) => (
             <div key={index} className="flex justify-between text-xs">
-              <span className="text-muted-foreground">
+              <span className="text-[#A0A0A0]">
                 {item.name} × {item.quantity}
               </span>
-              <span className="text-foreground">
+              <span className="text-[#E0E0E0]">
                 ${(item.price * item.quantity).toFixed(2)}
               </span>
             </div>
           ))}
           {cartState.items.length > 2 && (
-            <div className="text-xs text-muted-foreground">
+            <div className="text-xs text-[#A0A0A0]">
               +{cartState.items.length - 2} more items
             </div>
           )}
         </div>
 
-        <div className="border-t border-border pt-2">
+        <div className="border-t border-[#333333] pt-2">
           <div className="flex justify-between items-center">
-            <span className="text-sm font-medium text-foreground">Total</span>
-            <span className="text-lg font-bold text-foreground">
+            <span className="text-sm font-medium text-[#E0E0E0]">Total</span>
+            <span className="text-lg font-bold text-[#569CD6]">
               ${totalPrice.toFixed(2)}
             </span>
           </div>
@@ -110,15 +110,15 @@ export function PaymentRenderer({
                 },
               });
             }}
-            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs bg-muted hover:bg-muted/80 text-foreground rounded-md transition-colors font-medium"
+            className="w-full flex items-center justify-center gap-2 px-3 py-2 text-xs bg-[#1E1E1E] hover:bg-[#2D2D2D] text-[#E0E0E0] rounded-md transition-colors font-medium border border-[#333333] hover:border-[#569CD6]"
           >
             Edit Order
           </button>
         </div>
 
-        <div className="pt-3 border-t border-border">
-          <div className="bg-ui-teal/10 border border-ui-teal/30 rounded-lg p-3 mb-3">
-            <p className="text-ui-teal text-xs font-medium">
+        <div className="pt-3 border-t border-[#333333]">
+          <div className="bg-[#569CD6]/10 border border-[#569CD6]/30 rounded-lg p-3 mb-3">
+            <p className="text-[#569CD6] text-xs font-medium">
               Ready to process payment! Complete your purchase below.
             </p>
           </div>

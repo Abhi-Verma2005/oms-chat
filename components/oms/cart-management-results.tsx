@@ -88,14 +88,14 @@ export default function CartManagementResults({
   onProceedToPayment,
   onDoneAddingToCart 
 }: CartManagementResultsProps) {
-  const { cartData, message } = data
+  const { cartData, message } = data || {}
   const { state: contextCartState, removeItem: contextRemoveItem, updateQuantity: contextUpdateQuantity, clearCart: contextClearCart } = useCart()
   
   // Always use context cart data for display and operations
   const displayCartData = {
-    items: contextCartState.items,
-    totalItems: contextCartState.items.reduce((sum, item) => sum + item.quantity, 0),
-    totalPrice: contextCartState.items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+    items: contextCartState.items || [],
+    totalItems: (contextCartState.items || []).reduce((sum, item) => sum + item.quantity, 0),
+    totalPrice: (contextCartState.items || []).reduce((sum, item) => sum + (item.price * item.quantity), 0),
     lastUpdated: new Date()
   }
 
@@ -103,7 +103,7 @@ export default function CartManagementResults({
   console.log('Cart state debug:', {
     contextCartState: contextCartState.items,
     displayCartData: displayCartData.items,
-    cartData: cartData.items
+    cartData: cartData?.items || 'No cartData provided'
   })
 
   const formatPrice = (price: number) => {
@@ -147,28 +147,14 @@ export default function CartManagementResults({
   }
 
   return (
-    <div className="space-y-4 p-6">
+    <div className="space-y-4 p-6 bg-[#121212] text-[#E0E0E0]">
       {/* Cart Header */}
       <div className="flex items-center justify-between">
-        <h3 className="text-xl font-semibold text-foreground">
+        <h3 className="text-xl font-semibold text-[#E0E0E0]">
           Cart ({displayCartData.totalItems})
         </h3>
         
         <div className="flex items-center gap-2">
-          {/* Test button to check if context functions work */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={(e) => {
-              e.stopPropagation()
-              console.log('Test button clicked - context functions:', { contextRemoveItem, contextUpdateQuantity, contextClearCart })
-              console.log('Current context state:', contextCartState)
-            }}
-            className="text-xs"
-          >
-            Test
-          </Button>
-          
           {displayCartData.items.length > 0 && (
             <Button
               variant="ghost"
@@ -177,7 +163,7 @@ export default function CartManagementResults({
                 e.stopPropagation()
                 handleClearCart()
               }}
-              className="text-muted-foreground hover:text-destructive"
+              className="text-[#A0A0A0] hover:text-[#CD3131] hover:bg-[#2D2D2D]"
               title="Clear cart"
             >
               <Trash2 className="size-4" />
@@ -188,36 +174,36 @@ export default function CartManagementResults({
 
       {/* Cart Items */}
       {displayCartData.items.length === 0 ? (
-        <Card className="p-8">
-          <div className="text-center text-muted-foreground">
-            <ShoppingCart className="size-12 mx-auto mb-4 opacity-50" />
-            <p className="text-sm font-medium">Your cart is empty</p>
-            <p className="text-xs mt-1">Add publishers to get started</p>
+        <Card className="p-8 bg-[#2D2D2D] border-[#333333]">
+          <div className="text-center text-[#A0A0A0]">
+            <ShoppingCart className="size-12 mx-auto mb-4 opacity-50 text-[#666666]" />
+            <p className="text-sm font-medium text-[#E0E0E0]">Your cart is empty</p>
+            <p className="text-xs mt-1 text-[#A0A0A0]">Add publishers to get started</p>
           </div>
         </Card>
       ) : (
         <div className="space-y-3">
           {displayCartData.items.map((item) => (
-            <Card key={item.id} className="p-4">
+            <Card key={item.id} className="p-4 bg-[#2D2D2D] border-[#333333] hover:bg-[#333333] transition-colors">
               <div className="flex items-center gap-4">
                 {/* Item Info */}
                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="size-10 bg-primary/10 rounded-full flex items-center justify-center shrink-0">
-                    <span className="text-primary font-semibold text-sm">P</span>
+                  <div className="size-10 bg-[#007ACC]/20 rounded-full flex items-center justify-center shrink-0 border border-[#569CD6]/30">
+                    <span className="text-[#569CD6] font-semibold text-sm">P</span>
                   </div>
                   <div className="flex-1 min-w-0">
-                    <h4 className="font-medium text-foreground truncate">
+                    <h4 className="font-medium text-[#E0E0E0] truncate">
                       {item.name}
                     </h4>
                     {item.metadata?.dr && (
                       <div className="flex items-center gap-2 mt-1">
-                        <span className="text-xs text-muted-foreground">
+                        <span className="text-xs text-[#A0A0A0]">
                           DR {item.metadata.dr}
                         </span>
                         {item.metadata.da && (
                           <>
-                            <span className="text-xs text-muted-foreground">•</span>
-                            <span className="text-xs text-muted-foreground">
+                            <span className="text-xs text-[#666666]">•</span>
+                            <span className="text-xs text-[#A0A0A0]">
                               DA {item.metadata.da}
                             </span>
                           </>
@@ -238,12 +224,12 @@ export default function CartManagementResults({
                         e.stopPropagation()
                         handleQuantityChange(item.id, item.quantity - 1)
                       }}
-                      className="size-8"
+                      className="size-8 border-[#333333] bg-[#2D2D2D] text-[#E0E0E0] hover:bg-[#333333] hover:border-[#569CD6]"
                     >
                       <Minus className="size-3" />
                     </Button>
                     
-                    <span className="text-sm font-medium w-8 text-center">
+                    <span className="text-sm font-medium w-8 text-center text-[#E0E0E0]">
                       {item.quantity}
                     </span>
                     
@@ -254,14 +240,14 @@ export default function CartManagementResults({
                         e.stopPropagation()
                         handleQuantityChange(item.id, item.quantity + 1)
                       }}
-                      className="size-8"
+                      className="size-8 border-[#333333] bg-[#2D2D2D] text-[#E0E0E0] hover:bg-[#333333] hover:border-[#569CD6]"
                     >
                       <Plus className="size-3" />
                     </Button>
                   </div>
 
                   {/* Price */}
-                  <div className="font-semibold text-foreground text-sm min-w-[70px] text-right">
+                  <div className="font-semibold text-[#E0E0E0] text-sm min-w-[70px] text-right">
                     {formatPrice(item.price * item.quantity)}
                   </div>
 
@@ -273,7 +259,7 @@ export default function CartManagementResults({
                       e.stopPropagation()
                       handleRemoveItem(item.id)
                     }}
-                    className="size-8 text-muted-foreground hover:text-destructive"
+                    className="size-8 text-[#A0A0A0] hover:text-[#CD3131] hover:bg-[#2D2D2D]"
                     title="Remove item"
                   >
                     <Trash2 className="size-4" />
@@ -287,26 +273,26 @@ export default function CartManagementResults({
 
       {/* Checkout Section */}
       {displayCartData.items.length > 0 && (
-        <Card className="p-4">
+        <Card className="p-4 bg-[#2D2D2D] border-[#333333]">
           <div className="space-y-4">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Subtotal</span>
-              <span className="text-sm text-foreground">
+              <span className="text-sm font-medium text-[#A0A0A0]">Subtotal</span>
+              <span className="text-sm text-[#E0E0E0]">
                 {formatPrice(displayCartData.totalPrice)}
               </span>
             </div>
             
             <div className="flex items-center justify-between">
-              <span className="text-sm font-medium text-muted-foreground">Tax (8%)</span>
-              <span className="text-sm text-foreground">
+              <span className="text-sm font-medium text-[#A0A0A0]">Tax (8%)</span>
+              <span className="text-sm text-[#E0E0E0]">
                 {formatPrice(displayCartData.totalPrice * 0.08)}
               </span>
             </div>
             
-            <div className="border-t border-border pt-3">
+            <div className="border-t border-[#333333] pt-3">
               <div className="flex items-center justify-between">
-                <span className="text-base font-semibold text-foreground">Total</span>
-                <span className="text-lg font-bold text-foreground">
+                <span className="text-base font-semibold text-[#E0E0E0]">Total</span>
+                <span className="text-lg font-bold text-[#569CD6]">
                   {formatPrice(displayCartData.totalPrice * 1.08)}
                 </span>
               </div>
@@ -314,7 +300,7 @@ export default function CartManagementResults({
 
             <Button
               onClick={onDoneAddingToCart || (() => {})}
-              className="w-full bg-primary hover:bg-primary/90 text-primary-foreground py-3 px-4 rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+              className="w-full bg-[#569CD6] hover:bg-[#00C0C0] text-white py-3 px-4 rounded-md font-medium transition-colors flex items-center justify-center gap-2 shadow-md hover:shadow-lg"
               size="lg"
             >
               <CheckCircle className="size-4" />

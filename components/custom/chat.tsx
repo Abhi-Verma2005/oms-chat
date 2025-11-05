@@ -36,6 +36,7 @@ export function Chat({
   const { sendMessage, joinChat, leaveChat, onEvent, state: wsState } = useWebSocket();
   const wsCtx = useWebSocket();
   const [isCreatingChat, setIsCreatingChat] = useState(false);
+  const [selectedDocuments, setSelectedDocuments] = useState<string[]>([]);
   
   // Clean up initialMessages: merge empty assistant messages with tool invocations into adjacent messages
   const cleanedInitialMessages = useMemo(() => {
@@ -180,7 +181,7 @@ export function Chat({
   // Join chat on mount
   useEffect(() => {
     if (wsState === "connected") {
-      joinChat(id);
+      joinChat(id, user?.id);
     }
     return () => {
       leaveChat(id);
@@ -200,6 +201,7 @@ export function Chat({
       if (pending?.content) {
         sendMessage({
           chat_id: id,
+          user_id: user?.id,
           message: {
             room_id: id,
             payload: { role: "user", content: pending.content },
@@ -1045,6 +1047,7 @@ export function Chat({
 
     sendMessage({
       chat_id: id,
+      user_id: user?.id,
       message: {
         room_id: id,
         payload: {
@@ -1052,7 +1055,8 @@ export function Chat({
           ...(cartDataForBackend && { cartData: cartDataForBackend })
         },
       },
-      ...(cartDataForBackend && { cartData: cartDataForBackend })
+      ...(cartDataForBackend && { cartData: cartDataForBackend }),
+      ...(selectedDocuments.length > 0 && { selectedDocuments })
     });
 
     setInput("");
@@ -1064,7 +1068,7 @@ export function Chat({
         localStorage.removeItem(getPerChatDraftKey(id));
       } catch {}
     }
-  }, [input, isLoading, wsState, id, sendMessage, scrollToMessage, user, messages.length, router, cartState.items]);
+  }, [input, isLoading, wsState, id, sendMessage, scrollToMessage, user, messages.length, router, cartState.items, selectedDocuments]);
 
   // Stop generation
   const stop = useCallback(() => {
@@ -1097,6 +1101,7 @@ export function Chat({
     if (newMessage.role === "user" && wsState === "connected" && newMessage.content) {
       sendMessage({
         chat_id: id,
+        user_id: user?.id,
         message: {
           room_id: id,
           payload: {
@@ -1205,6 +1210,8 @@ export function Chat({
                   setAttachments={setAttachments}
                   messages={messages}
                   append={append}
+                  selectedDocuments={selectedDocuments}
+                  setSelectedDocuments={setSelectedDocuments}
                 />
               </form>
             </div>

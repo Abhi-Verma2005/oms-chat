@@ -51,3 +51,15 @@ export const planStep = pgTable("PlanStep", {
 
 export type ExecutionPlan = InferSelectModel<typeof executionPlan>;
 export type PlanStep = InferSelectModel<typeof planStep>;
+
+// Message Embeddings tracking table
+export const messageEmbeddings = pgTable("MessageEmbeddings", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  messageId: varchar("messageId", { length: 255 }).notNull(),
+  pineconeId: varchar("pineconeId", { length: 255 }).notNull(),
+  chunkIndex: integer("chunkIndex").notNull().default(0),
+  hash: varchar("hash", { length: 255 }).notNull(),
+  status: varchar("status", { length: 50 }).notNull().default("ready"), // pending | ready | failed
+  createdAt: timestamp("createdAt").notNull().defaultNow(),
+  updatedAt: timestamp("updatedAt").notNull().defaultNow(),
+});

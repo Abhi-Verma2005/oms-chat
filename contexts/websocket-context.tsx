@@ -33,6 +33,7 @@ export enum MessageType {
   IterationEnd = "iteration_end",
   Heartbeat = "heartbeat",
   Error = "error",
+  StopGeneration = "stop_generation",
 }
 
 export interface WebSocketMessage {
@@ -44,10 +45,12 @@ export interface WebSocketMessage {
 
 export interface JoinRoomMessage {
   chat_id: string;
+  user_id?: string;
 }
 
 export interface SendMessageData {
   chat_id: string;
+  user_id?: string;
   message: {
     room_id: string;
     payload: {
@@ -56,6 +59,7 @@ export interface SendMessageData {
       name?: string;
     };
   };
+  selectedDocuments?: string[];
 }
 
 export interface ChatMessage {
@@ -70,7 +74,7 @@ interface WebSocketContextType {
   state: WebSocketState;
   sendMessage: (data: SendMessageData) => void;
   sendStop: (chatId: string) => void;
-  joinChat: (chatId: string) => void;
+  joinChat: (chatId: string, userId?: string) => void;
   leaveChat: (chatId: string) => void;
   onMessage: (handler: (message: WebSocketMessage) => void) => () => void;
   onEvent: (eventType: MessageType, handler: (payload: unknown) => void) => () => void;
@@ -92,6 +96,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
   const messageHandlersRef = useRef<Set<(message: WebSocketMessage) => void>>(new Set());
   const eventHandlersRef = useRef<Map<MessageType, Set<(payload: unknown) => void>>>(new Map());
   const currentChatIdRef = useRef<string | null>(null);
+  const currentUserIdRef = useRef<string | null>(null);
   const shouldReconnectRef = useRef(true);
 
   const connect = useCallback(() => {
@@ -116,7 +121,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
         if (currentChatIdRef.current && ws.readyState === WebSocket.OPEN) {
           const message: WebSocketMessage = {
             type: MessageType.JoinChat,
-            payload: { chat_id: currentChatIdRef.current },
+            payload: { chat_id: currentChatIdRef.current, user_id: currentUserIdRef.current || undefined },
             timestamp: Date.now(),
             message_id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
           };
@@ -205,7 +210,7 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
 
     const message: WebSocketMessage = {
       type: MessageType.ChatMessage,
-      payload: data,
+      payload: { ...data, user_id: data.user_id || currentUserIdRef.current || undefined },
       timestamp: Date.now(),
       message_id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
     };
@@ -224,22 +229,24 @@ export function WebSocketProvider({ children }: { children: React.ReactNode }) {
     wsRef.current.send(JSON.stringify(stopMessage));
   }, []);
 
-  const joinChat = useCallback((chatId: string) => {
+  const joinChat = useCallback((chatId: string, userId?: string) => {
     if (wsRef.current?.readyState !== WebSocket.OPEN) {
       // Store chatId to join after connection
       currentChatIdRef.current = chatId;
+      currentUserIdRef.current = userId || null;
       return;
     }
 
     const message: WebSocketMessage = {
       type: MessageType.JoinChat,
-      payload: { chat_id: chatId },
+      payload: { chat_id: chatId, user_id: userId },
       timestamp: Date.now(),
       message_id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`,
     };
 
     wsRef.current.send(JSON.stringify(message));
     currentChatIdRef.current = chatId;
+    currentUserIdRef.current = userId || null;
   }, []);
 
   const leaveChat = useCallback((chatId: string) => {

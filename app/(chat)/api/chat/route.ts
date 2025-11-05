@@ -178,9 +178,39 @@ export async function POST(request: Request) {
     return basePrompt + userContext;
   };
 
+  // RAG: Retrieve relevant context from conversation history
+  let ragContext = '';
+  if (session?.user?.id) {
+    try {
+      const lastMessage = coreMessages[coreMessages.length - 1];
+      if (lastMessage?.role === 'user' && lastMessage.content && typeof lastMessage.content === 'string') {
+        // Import RAG retrieval service
+        const { ragRetrieval } = await import('@/lib/rag/retrieval');
+        
+        const ragResults = await ragRetrieval.retrieveContext(
+          session.user.id,
+          lastMessage.content,
+          {
+            topK: 5,
+            minScore: 0.3, // Lower threshold for better recall (was 0.7 - too strict!)
+            timeout: 5000, // 5 second timeout
+          }
+        );
+
+        if (ragResults.length > 0) {
+          ragContext = ragRetrieval.buildContextString(ragResults);
+          console.log(`[RAG] Injected ${ragResults.length} relevant contexts into system prompt`);
+        }
+      }
+    } catch (error) {
+      console.warn('[RAG] Retrieval failed, continuing without context:', error);
+      // Continue without RAG context - don't block chat
+    }
+  }
+
   const result = await streamText({
     model: openaiProModel,
-    system: generateSystemPrompt(userInfo || null),
+    system: generateSystemPrompt(userInfo || null) + ragContext,
     messages: coreMessages,
     tools: {
       createExecutionPlan: {

@@ -2,9 +2,9 @@
 
 import cx from "classnames";
 import Link from "next/link";
-import { useParams, usePathname } from "next/navigation";
+import { useParams } from "next/navigation";
 import { User } from "next-auth";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { toast } from "sonner";
 import useSWR from "swr";
 
@@ -48,19 +48,18 @@ export const History = ({
   onItemClick?: () => void;
 }) => {
   const { id } = useParams();
-  const pathname = usePathname();
 
   const {
     data: history,
     isLoading,
     mutate,
   } = useSWR<Array<Chat>>(user ? "/api/history" : null, fetcher, {
-    fallbackData: [],
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    revalidateOnMount: true,
+    revalidateIfStale: false,
+    dedupingInterval: 60000,
   });
-
-  useEffect(() => {
-    mutate();
-  }, [pathname, mutate]);
 
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);

@@ -25,10 +25,12 @@
   - LRU eviction when cache is full
   - User-specific cache isolation
 
-### 4. Chat Route Integration (`app/(chat)/api/chat/route.ts`)
-- RAG context retrieval before generating response
+### 4. WebSocket Chat Integration (via `backend-ts/src/orchestrator/service.ts`)
+- **Note:** Chat processing is handled via WebSocket through backend-ts, not through frontend HTTP routes
+- RAG context retrieval happens in `OrchestratorService.processMessage()` before generating response
 - Context injection into system prompt
 - Non-blocking: continues without context if RAG fails
+- Handles both conversation RAG and document RAG
 
 ## 🔄 Comparison with Mosaic-Next
 

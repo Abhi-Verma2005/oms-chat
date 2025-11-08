@@ -1,11 +1,12 @@
 "use client"
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useMemo } from 'react'
 import { Upload, FileText, X, CheckCircle, Loader2, XCircle, Clock } from 'lucide-react'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
 import { toast } from 'sonner'
 import { cn } from '@/lib/utils'
+import { useDocuments } from '../../contexts/DocumentsProvider'
 
 interface Document {
   id: string
@@ -35,44 +36,29 @@ export function DocumentUpload({
   onDocumentsUpdated
 }: DocumentUploadProps) {
   const [isUploading, setIsUploading] = useState(false)
-  const [documents, setDocuments] = useState<Document[]>([])
   const [searchQuery, setSearchQuery] = useState('')
-  const [isLoading, setIsLoading] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const [documentStatuses, setDocumentStatuses] = useState<Map<string, string>>(new Map())
   const intervalRefs = useRef<Map<string, NodeJS.Timeout>>(new Map())
+  
+  // Use documents from context
+  const { documents: allDocuments, isLoading, refetch: refetchDocuments, updateDocumentStatus, addDocument } = useDocuments()
+  
+  // Filter documents by search query (client-side filtering since context has all documents)
+  const documents = useMemo(() => {
+    if (!searchQuery) return allDocuments
+    const query = searchQuery.toLowerCase()
+    return allDocuments.filter(doc => 
+      (doc.original_name?.toLowerCase() || '').includes(query) ||
+      (doc.file_name?.toLowerCase() || '').includes(query)
+    )
+  }, [allDocuments, searchQuery])
 
-  // Load documents on mount
+  // Cleanup intervals on unmount
   useEffect(() => {
-    loadDocuments()
     return () => {
-      // Cleanup intervals on unmount
       intervalRefs.current.forEach(interval => clearInterval(interval))
     }
   }, [])
-
-  const loadDocuments = async () => {
-    setIsLoading(true)
-    try {
-      const response = await fetch(`/api/upload-document?search=${encodeURIComponent(searchQuery)}`)
-      if (response.ok) {
-        const data = await response.json()
-        setDocuments(data.documents || [])
-        
-        // Update statuses map
-        const statusMap = new Map<string, string>()
-        data.documents?.forEach((doc: Document) => {
-          statusMap.set(doc.id, doc.processing_status)
-        })
-        setDocumentStatuses(statusMap)
-      }
-    } catch (error) {
-      console.error('Failed to load documents:', error)
-      toast.error('Failed to load documents')
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   // Poll document status
   const pollDocumentStatus = (documentId: string) => {
@@ -88,16 +74,18 @@ export function DocumentUpload({
           const doc = data.documents?.find((d: Document) => d.id === documentId)
           
           if (doc) {
-            setDocumentStatuses(prev => {
-              const next = new Map(prev)
-              next.set(documentId, doc.processing_status)
-              return next
-            })
+            // Update status in context
+            updateDocumentStatus(documentId, doc.processing_status)
+            
+            // Dispatch event for other components
+            window.dispatchEvent(new CustomEvent('document-status-changed', {
+              detail: { documentId, status: doc.processing_status }
+            }))
             
             if (doc.processing_status === 'completed' || doc.processing_status === 'failed') {
               clearInterval(interval)
               intervalRefs.current.delete(documentId)
-              loadDocuments() // Refresh list
+              refetchDocuments() // Refresh list from context
               onDocumentsUpdated?.()
             }
           }
@@ -132,27 +120,27 @@ export function DocumentUpload({
       const result = await response.json()
       
       if (result.success) {
-        const newDoc = {
+        const newDoc: Document = {
           ...result.document,
           processing_status: 'processing',
           original_name: result.document.original_name,
         }
-        setDocuments(prev => [newDoc, ...prev])
-        setDocumentStatuses(prev => {
-          const next = new Map(prev)
-          next.set(result.document.id, 'processing')
-          return next
-        })
+        
+        // Add to context
+        addDocument(newDoc)
         toast.success('Document uploaded successfully')
         
         // Start polling for this document
         pollDocumentStatus(result.document.id)
         onDocumentsUpdated?.()
         
-        // Dispatch custom event to notify other components
+        // Dispatch custom event to notify other components (context will also listen)
         window.dispatchEvent(new CustomEvent('document-uploaded', { 
           detail: { documentId: result.document.id } 
         }))
+        
+        // Also refresh to get latest from server
+        refetchDocuments()
       } else {
         throw new Error(result.error || 'Upload failed')
       }
@@ -246,7 +234,7 @@ export function DocumentUpload({
           </div>
         ) : (
           filteredDocuments.map(doc => {
-            const status = documentStatuses.get(doc.id) || doc.processing_status
+            const status = doc.processing_status
             const isCompleted = status === 'completed'
             const isFailed = status === 'failed'
             const isProcessing = status === 'processing'

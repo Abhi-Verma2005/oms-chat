@@ -65,7 +65,7 @@ export const History = ({
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const handleDelete = async () => {
-    const deletePromise = fetch(`/api/chat?id=${deleteId}`, {
+    const deletePromise = fetch(`/api/chat/delete?id=${deleteId}`, {
       method: "DELETE",
     });
 

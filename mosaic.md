@@ -6,9 +6,11 @@ This document outlines the comprehensive plan for transforming all Mosaic app fe
 
 The transformation follows a standardized pattern for creating AI-powered chat tools:
 1. **AI Tool Function** (`ai/actions/`) - Core business logic and API calls
-2. **Chat Route** (`app/(chat)/api/chat/route.ts`) - Tool registration and AI integration
+2. **Backend-TS Orchestrator** (`backend-ts/src/orchestrator/service.ts`) - Tool registration and AI integration via WebSocket
 3. **UI Component** (`components/oms/`) - Display component for tool results
 4. **Message Handler** (`components/custom/message.tsx`) - Tool invocation display
+
+**Note:** Chat processing is handled via WebSocket through the backend-ts server, not through frontend HTTP routes. All tool execution and RAG retrieval happens in the `OrchestratorService`.
 
 ## 🛠️ Tool Creation Guide
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { Star, ExternalLink, TrendingUp, Heart, ShoppingCart } from "lucide-react";
+import { ExternalLink, TrendingUp, Heart, ShoppingCart } from "lucide-react";
 import { useState, useEffect } from "react";
 
 interface PublisherData {
@@ -231,14 +231,16 @@ export function PublishersResults({ results, onAddToCart, onRemoveFromCart, cart
                     <div className="flex items-start space-x-3">
                       <div className="flex items-center space-x-1 flex-shrink-0">
                         {[...Array(5)].map((_, i) => (
-                          <Star
+                          <span
                             key={i}
-                            className={`size-4 ${
+                            className={`text-base font-semibold ${
                               i < publisher.rating
-                                ? "text-yellow-400 fill-current"
+                                ? "text-yellow-400"
                                 : "text-[#666666]"
                             }`}
-                          />
+                          >
+                            *
+                          </span>
                         ))}
                       </div>
                       <div className="flex flex-col space-y-2 min-w-0 flex-1">

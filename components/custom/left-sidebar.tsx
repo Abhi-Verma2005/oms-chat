@@ -44,7 +44,7 @@ export function LeftSidebar({ user, onCollapseChange }: LeftSidebarProps) {
         className="h-9 w-9 rounded-md hover:bg-accent opacity-70 hover:opacity-100 transition-all duration-300"
         title="Open sidebar"
       >
-        <Menu className="h-5 w-5" />
+        <Menu className="size-5" />
       </Button>
 
       {/* Sheet overlay */}

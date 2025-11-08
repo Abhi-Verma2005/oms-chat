@@ -196,19 +196,54 @@ export function Chat({
       const key = `pending_first_message_${id}`;
       const raw = sessionStorage.getItem(key);
       if (!raw) return;
-      const pending = JSON.parse(raw) as Message;
+      const parsed = JSON.parse(raw);
+      
+      // Handle both old format (just Message) and new format (with selectedDocuments/cartData)
+      let pending: Message;
+      let pendingSelectedDocuments: string[] | undefined;
+      let cartData: any;
+      
+      if (parsed.message) {
+        // New format: { message: Message, selectedDocuments?: string[], cartData?: any }
+        pending = parsed.message;
+        pendingSelectedDocuments = parsed.selectedDocuments;
+        cartData = parsed.cartData;
+      } else {
+        // Old format: just Message
+        pending = parsed as Message;
+      }
       // Send via WebSocket; UI likely already shows this message from DB
       if (pending?.content) {
-        sendMessage({
+        const messagePayload: any = {
           chat_id: id,
           user_id: user?.id,
           message: {
             room_id: id,
-            payload: { role: "user", content: pending.content },
+            payload: {
+              role: "user",
+              content: pending.content,
+              ...(cartData && { cartData: cartData })
+            },
           },
-        });
+        };
+        
+        // Include selectedDocuments and cartData if they exist
+        if (pendingSelectedDocuments && pendingSelectedDocuments.length > 0) {
+          messagePayload.selectedDocuments = pendingSelectedDocuments;
+        }
+        if (cartData) {
+          messagePayload.cartData = cartData;
+        }
+        
+        sendMessage(messagePayload);
         setIsLoading(true);
         stopRequestedRef.current = false;
+        
+        // Restore selectedDocuments state so it persists for subsequent messages
+        if (pendingSelectedDocuments && pendingSelectedDocuments.length > 0) {
+          setSelectedDocuments(pendingSelectedDocuments);
+        }
+        
         // Align the pending message to top in the viewport
         setTimeout(() => {
           scrollToMessage(`msg-${pending.id}`);
@@ -218,7 +253,7 @@ export function Chat({
       // Clear any leftover new-chat draft
       localStorage.removeItem(NEW_CHAT_DRAFT_KEY);
     } catch {}
-  }, [id, wsState, sendMessage, scrollToMessage]);
+  }, [id, wsState, sendMessage, scrollToMessage, user, setSelectedDocuments]);
 
   // Handle WebSocket events
   useEffect(() => {
@@ -988,8 +1023,30 @@ export function Chat({
         const newId = data?.id as string;
         if (!newId) { setIsCreatingChat(false); return; }
 
+        // Prepare cart data and selected documents to store with pending message
+        const items = cartState.items || [];
+        const cartDataForBackend = items.length > 0 ? {
+          items: items.map(item => ({
+            id: item.id,
+            type: item.type,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            addedAt: item.addedAt.toISOString(),
+            metadata: item.metadata
+          })),
+          totalItems: items.reduce((sum, item) => sum + item.quantity, 0),
+          totalPrice: items.reduce((sum, item) => sum + (item.price * item.quantity), 0),
+        } : undefined;
+
         try {
-          sessionStorage.setItem(`pending_first_message_${newId}`, JSON.stringify(userMsg));
+          // Store pending message with selectedDocuments and cartData
+          const pendingData = {
+            message: userMsg,
+            selectedDocuments: selectedDocuments.length > 0 ? selectedDocuments : undefined,
+            cartData: cartDataForBackend
+          };
+          sessionStorage.setItem(`pending_first_message_${newId}`, JSON.stringify(pendingData));
           localStorage.removeItem(NEW_CHAT_DRAFT_KEY);
         } catch {}
 

@@ -184,49 +184,16 @@ export class RAGRetrievalService {
 export const ragRetrieval = new RAGRetrievalService();
 ```
 
-### Step 2: Integrate into Chat Route
+### Step 2: RAG Integration (Already Implemented in Backend-TS)
 
-Modify `frontend/app/(chat)/api/chat/route.ts`:
+**Note:** Chat processing is handled via WebSocket through `backend-ts/src/orchestrator/service.ts`, not through frontend HTTP routes.
 
-```typescript
-import { ragRetrieval } from '@/lib/rag/retrieval';
+RAG is already integrated in `OrchestratorService.processMessage()`:
+- Conversation RAG: Retrieves relevant context from Pinecone (lines 140-314)
+- Document RAG: Retrieves selected documents when provided (lines 247-295)
+- Both are injected into the system prompt before generating responses
 
-export async function POST(request: Request) {
-  // ... existing code ...
-
-  const generateSystemPrompt = (userInfo, ragContext = '') => {
-    const basePrompt = `...`;
-    return basePrompt + ragContext;
-  };
-
-  // BEFORE streamText call:
-  let ragContext = '';
-  if (session?.user?.id) {
-    try {
-      const lastMessage = coreMessages[coreMessages.length - 1];
-      if (lastMessage?.role === 'user' && lastMessage.content) {
-        const ragResults = await ragRetrieval.retrieveContext(
-          session.user.id,
-          lastMessage.content,
-          5,
-          0.7
-        );
-        ragContext = ragRetrieval.buildContextString(ragResults);
-      }
-    } catch (error) {
-      console.warn('RAG retrieval failed:', error);
-      // Continue without context
-    }
-  }
-
-  const result = await streamText({
-    model: openaiProModel,
-    system: generateSystemPrompt(userInfo || null, ragContext),
-    messages: coreMessages,
-    // ... rest of config
-  });
-}
-```
+The frontend chat route has been removed to eliminate confusion and duplication. All chat processing now happens through the WebSocket server.
 
 ### Step 3: Add Query Rewriting (Optional Enhancement)
 

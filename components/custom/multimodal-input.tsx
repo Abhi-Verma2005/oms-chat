@@ -20,6 +20,7 @@ import { PreviewAttachment } from "./preview-attachment";
 import useWindowSize from "./use-window-size";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
+import { useDocuments } from "../../contexts/DocumentsProvider";
 
 // Removed static time-based greetings; we fetch a dynamic title and show skeleton while loading
 
@@ -85,10 +86,8 @@ export function MultimodalInput({
   const { width } = useWindowSize();
   const [pageTitleBase] = useState<string>("OMS Chat Assistant");
   const [showDocsHint, setShowDocsHint] = useState(false);
-  const [documents, setDocuments] = useState<Array<{id: string; original_name: string; processing_status: string}>>([]);
-  const [isLoadingDocs, setIsLoadingDocs] = useState(false);
+  const { documents, isLoading: isLoadingDocs, refetch: refetchDocuments, updateDocumentStatus } = useDocuments();
   const docsHintRef = useRef<HTMLDivElement>(null);
-  const documentsLoadedRef = useRef(false); // Track if documents have been fetched
   const documentUploadInputRef = useRef<HTMLInputElement>(null);
   const [isUploadingDocument, setIsUploadingDocument] = useState(false);
   const fileDialogOpenRef = useRef(false);
@@ -190,75 +189,8 @@ export function MultimodalInput({
   const [isClient, setIsClient] = useState(false);
   useEffect(() => { setIsClient(true); }, []);
 
-  const loadDocuments = useCallback(async (forceRefresh = false) => {
-    // If already loaded and not forcing refresh, use cache
-    if (documentsLoadedRef.current && !forceRefresh && documents.length > 0) {
-      console.log('[MultimodalInput] Using cached documents:', documents.length);
-      return;
-    }
-
-    setIsLoadingDocs(true);
-    try {
-      const response = await fetch('/api/upload-document');
-      if (response.ok) {
-        const data = await response.json();
-        console.log('[MultimodalInput] Loaded documents:', data.documents?.length || 0);
-        console.log('[MultimodalInput] All documents:', data.documents);
-        console.log('[MultimodalInput] Document statuses:', data.documents?.map((d: any) => ({ id: d.id, name: d.original_name, status: d.processing_status })));
-        setDocuments(data.documents || []);
-        documentsLoadedRef.current = true; // Mark as loaded
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('Failed to load documents:', response.status, errorData);
-      }
-    } catch (error) {
-      console.error('Failed to load documents:', error);
-    } finally {
-      setIsLoadingDocs(false);
-    }
-  }, [documents.length]);
-
-  // Load documents when @ is pressed (only fetch if not cached)
-  useEffect(() => {
-    if (showDocsHint && !documentsLoadedRef.current) {
-      loadDocuments();
-    }
-  }, [showDocsHint, loadDocuments]);
-
-  // Listen for document upload events to refresh cache
-  useEffect(() => {
-    const handleDocumentUploaded = () => {
-      console.log('[MultimodalInput] Document uploaded, refreshing cache...');
-      documentsLoadedRef.current = false; // Invalidate cache
-      if (showDocsHint) {
-        // If tooltip is open, refresh immediately
-        loadDocuments(true);
-      }
-    };
-
-    const handleDocumentStatusChanged = (event: any) => {
-      const { documentId, status } = event.detail;
-      console.log('[MultimodalInput] Document status changed:', documentId, status);
-      
-      // Update the document in cache if status changed to completed/failed
-      if (status === 'completed' || status === 'failed') {
-        setDocuments(prev => prev.map(doc => 
-          doc.id === documentId 
-            ? { ...doc, processing_status: status }
-            : doc
-        ));
-      }
-    };
-
-    // Listen for custom events
-    window.addEventListener('document-uploaded', handleDocumentUploaded);
-    window.addEventListener('document-status-changed', handleDocumentStatusChanged);
-    
-    return () => {
-      window.removeEventListener('document-uploaded', handleDocumentUploaded);
-      window.removeEventListener('document-status-changed', handleDocumentStatusChanged);
-    };
-  }, [showDocsHint, loadDocuments]);
+  // Documents are now managed by DocumentsProvider context
+  // No need to fetch here - context handles it globally
 
   const toggleDocumentSelection = (documentId: string) => {
     setSelectedDocuments(prev => {
@@ -307,15 +239,13 @@ export function MultimodalInput({
       if (result.success) {
         toast.success('Document uploaded successfully');
         
-        // Invalidate cache and refresh
-        documentsLoadedRef.current = false;
-        console.log('[MultimodalInput] Refreshing documents after upload (forceRefresh=true)');
-        await loadDocuments(true);
-        
-        // Dispatch event for other components
+        // Dispatch event - DocumentsProvider will listen and refresh
         window.dispatchEvent(new CustomEvent('document-uploaded', { 
           detail: { documentId: result.document.id } 
         }));
+        
+        // Also refresh immediately
+        refetchDocuments();
       } else {
         throw new Error(result.error || 'Upload failed');
       }

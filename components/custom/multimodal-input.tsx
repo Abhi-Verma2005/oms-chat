@@ -18,9 +18,9 @@ import { ArrowUpIcon, StopIcon, GlobeIcon, ImageIcon, AtIcon, LoaderIcon } from 
 import Logo from "./logo";
 import { PreviewAttachment } from "./preview-attachment";
 import useWindowSize from "./use-window-size";
+import { useDocuments } from "../../contexts/DocumentsProvider";
 import { Button } from "../ui/button";
 import { Textarea } from "../ui/textarea";
-import { useDocuments } from "../../contexts/DocumentsProvider";
 
 // Removed static time-based greetings; we fetch a dynamic title and show skeleton while loading
 

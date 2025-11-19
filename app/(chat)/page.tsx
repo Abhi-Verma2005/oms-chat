@@ -1,7 +1,8 @@
+import React from "react";
+
 import { auth } from "../../app/(auth)/auth";
 import { Chat } from "../../components/custom/chat";
 import { generateUUID } from "../../lib/utils";
-import React from "react";
 
 export default async function Page() {
   const id = generateUUID();

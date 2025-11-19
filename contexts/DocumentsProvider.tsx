@@ -3,7 +3,7 @@
 import { useSession } from "next-auth/react";
 import { createContext, useContext, useEffect, useState, useCallback } from "react";
 
-interface Document {
+export interface StoredDocument {
   id: string;
   original_name: string;
   file_name: string;
@@ -18,19 +18,19 @@ interface Document {
 }
 
 interface DocumentsContextType {
-  documents: Document[];
+  documents: StoredDocument[];
   isLoading: boolean;
   error: string | null;
   refetch: () => void;
   updateDocumentStatus: (documentId: string, status: string) => void;
-  addDocument: (document: Document) => void;
+  addDocument: (document: StoredDocument) => void;
 }
 
 const DocumentsContext = createContext<DocumentsContextType | undefined>(undefined);
 
 export function DocumentsProvider({ children }: { children: React.ReactNode }) {
   const { data: session, status } = useSession();
-  const [documents, setDocuments] = useState<Document[]>([]);
+  const [documents, setDocuments] = useState<StoredDocument[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [hasLoaded, setHasLoaded] = useState(false);
@@ -81,7 +81,7 @@ export function DocumentsProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   // Add a new document to cache
-  const addDocument = useCallback((document: Document) => {
+  const addDocument = useCallback((document: StoredDocument) => {
     setDocuments(prev => {
       // Check if document already exists
       const exists = prev.find(d => d.id === document.id);

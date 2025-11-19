@@ -1,7 +1,7 @@
 import mammoth from 'mammoth'
-import * as XLSX from 'xlsx'
+import * as Papa from 'papaparse'
 import PDFParser from 'pdf-parse/lib/pdf-parse'
-import Papa from 'papaparse'
+import * as XLSX from 'xlsx'
 
 export interface ExtractionResult {
   content: string
@@ -922,7 +922,7 @@ export class FileProcessor {
         language: 'en',
         readabilityScore: 50,
         avgWordsPerPage: pages.length > 0 ? Math.round(text.split(/\s+/).length / pages.length) : 0,
-        totalWordCount: text.split(/\s+/).filter(word => word.length > 0).length,
+        totalWordCount: text.split(/\s+/).filter((word: string) => word.length > 0).length,
         topicKeywords: [],
         documentType: 'General Document',
         hasFootnotes: false,

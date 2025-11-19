@@ -1,7 +1,8 @@
 import { Message } from "ai";
+
+import { generateChatTitleFromMessages } from "../../../../ai/title";
 import { auth } from "../../../../app/(auth)/auth";
 import { saveChat } from "../../../../db/queries";
-import { generateChatTitleFromMessages } from "../../../../ai/title";
 
 export async function POST(request: Request) {
   const session = await auth();

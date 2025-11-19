@@ -1,26 +1,14 @@
 "use client"
 
-import { useState, useRef, useEffect, useMemo } from 'react'
-import { Upload, FileText, X, CheckCircle, Loader2, XCircle, Clock } from 'lucide-react'
+import { CheckCircle, Clock, FileText, Loader2, Upload, X, XCircle } from 'lucide-react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { toast } from 'sonner'
+
+import { cn } from '@/lib/utils'
+
+import { useDocuments, type StoredDocument } from '../../contexts/DocumentsProvider'
 import { Button } from '../ui/button'
 import { Input } from '../ui/input'
-import { toast } from 'sonner'
-import { cn } from '@/lib/utils'
-import { useDocuments } from '../../contexts/DocumentsProvider'
-
-interface Document {
-  id: string
-  original_name: string
-  file_name: string
-  file_url: string
-  file_size?: number
-  mime_type?: string
-  uploaded_at: string
-  processing_status: string
-  chunk_count?: number
-  content_summary?: string
-  error_message?: string
-}
 
 interface DocumentUploadProps {
   onDocumentSelect?: (documentId: string) => void
@@ -44,7 +32,7 @@ export function DocumentUpload({
   const { documents: allDocuments, isLoading, refetch: refetchDocuments, updateDocumentStatus, addDocument } = useDocuments()
   
   // Filter documents by search query (client-side filtering since context has all documents)
-  const documents = useMemo(() => {
+  const documents = useMemo<StoredDocument[]>(() => {
     if (!searchQuery) return allDocuments
     const query = searchQuery.toLowerCase()
     return allDocuments.filter(doc => 
@@ -71,7 +59,7 @@ export function DocumentUpload({
         const response = await fetch(`/api/upload-document?search=`)
         if (response.ok) {
           const data = await response.json()
-          const doc = data.documents?.find((d: Document) => d.id === documentId)
+          const doc = data.documents?.find((d: StoredDocument) => d.id === documentId)
           
           if (doc) {
             // Update status in context
@@ -120,10 +108,12 @@ export function DocumentUpload({
       const result = await response.json()
       
       if (result.success) {
-        const newDoc: Document = {
+        const newDoc: StoredDocument = {
           ...result.document,
           processing_status: 'processing',
           original_name: result.document.original_name,
+          file_size: result.document.file_size ?? file.size,
+          mime_type: result.document.mime_type ?? file.type ?? 'application/octet-stream',
         }
         
         // Add to context

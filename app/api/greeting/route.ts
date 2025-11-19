@@ -1,6 +1,7 @@
+import { generateObject } from "ai";
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { generateObject } from "ai";
+
 import { openaiFlashModel } from "../../../ai";
 
 const QuerySchema = z.object({

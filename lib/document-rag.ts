@@ -1,4 +1,5 @@
 import { documentChunking, type DocumentChunk } from './document-chunking'
+
 import type { CSVMetadata, XLSXMetadata, DOCXMetadata, PDFMetadata } from './file-processor'
 
 // Namespace function matching mosaic-next
